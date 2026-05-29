@@ -21,6 +21,21 @@ api = [
     "uvicorn[standard]>=0.30",
     "structlog>=24",
 ]
+# Baseline RAG store (Tier A, ADR-008). pgvector-backed vector store + migrations.
+pgvector = [
+    "sqlalchemy>=2",
+    "pgvector>=0.3",
+    "psycopg[binary]>=3.2",
+    "alembic>=1.13",
+]
+# Local embeddings via Ollama (default, offline). `local core install[embeddings]`.
+embeddings = [
+    "httpx>=0.27",
+]
+# Optional cloud embedder/LLM upgrade (OpenAI). `local core install[openai]`.
+openai = [
+    "openai>=1.30",
+]
 
 [build-system]
 requires = ["hatchling"]
