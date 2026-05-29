@@ -1,0 +1,38 @@
+{
+  "additionalProperties": false,
+  "description": "Who is asking, and under what authority \u2014 the input to policy.",
+  "properties": {
+    "labels": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Labels",
+      "type": "array"
+    },
+    "purpose": {
+      "title": "Purpose",
+      "type": "string"
+    },
+    "role": {
+      "title": "Role",
+      "type": "string"
+    },
+    "sub": {
+      "title": "Sub",
+      "type": "string"
+    },
+    "tenant": {
+      "title": "Tenant",
+      "type": "string"
+    }
+  },
+  "required": [
+    "sub",
+    "tenant",
+    "role",
+    "purpose"
+  ],
+  "title": "UserContext",
+  "type": "object"
+}

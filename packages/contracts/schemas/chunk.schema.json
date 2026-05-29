@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "Classification": {
+      "description": "Sensitivity label attached to a chunk/document, lowest to highest.",
+      "enum": [
+        "public",
+        "internal",
+        "confidential",
+        "restricted"
+      ],
+      "title": "Classification",
+      "type": "string"
+    },
+    "RiskSignal": {
+      "additionalProperties": false,
+      "description": "An adversarial signal detected in a chunk, with a confidence weight.",
+      "properties": {
+        "evidence": {
+          "title": "Evidence",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/RiskType"
+        },
+        "weight": {
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "weight",
+        "evidence"
+      ],
+      "title": "RiskSignal",
+      "type": "object"
+    },
+    "RiskType": {
+      "description": "Adversarial signal categories a chunk may carry (filled from phase 3).",
+      "enum": [
+        "injection",
+        "role_override",
+        "exfiltration",
+        "hidden_text",
+        "tool_instruction"
+      ],
+      "title": "RiskType",
+      "type": "string"
+    },
+    "Span": {
+      "additionalProperties": false,
+      "description": "A half-open ``[start, end)`` character range of sensitive text.",
+      "properties": {
+        "end": {
+          "title": "End",
+          "type": "integer"
+        },
+        "start": {
+          "title": "Start",
+          "type": "integer"
+        },
+        "subtype": {
+          "title": "Subtype",
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/SpanType"
+        }
+      },
+      "required": [
+        "type",
+        "subtype",
+        "start",
+        "end"
+      ],
+      "title": "Span",
+      "type": "object"
+    },
+    "SpanType": {
+      "description": "Kind of sensitive span detected within a chunk's text.",
+      "enum": [
+        "pii",
+        "secret"
+      ],
+      "title": "SpanType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A retrieved unit of context. Enrichment fields stay empty until phase 3.",
+  "properties": {
+    "classification": {
+      "$ref": "#/$defs/Classification"
+    },
+    "doc_id": {
+      "title": "Doc Id",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "Metadata",
+      "type": "object"
+    },
+    "pii_spans": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Span"
+      },
+      "title": "Pii Spans",
+      "type": "array"
+    },
+    "risk_signals": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RiskSignal"
+      },
+      "title": "Risk Signals",
+      "type": "array"
+    },
+    "secret_spans": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Span"
+      },
+      "title": "Secret Spans",
+      "type": "array"
+    },
+    "tenant": {
+      "title": "Tenant",
+      "type": "string"
+    },
+    "text": {
+      "title": "Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "doc_id",
+    "tenant",
+    "text",
+    "classification"
+  ],
+  "title": "Chunk",
+  "type": "object"
+}

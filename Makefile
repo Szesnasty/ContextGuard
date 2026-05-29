@@ -3,7 +3,7 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down down-v seed run test test-int e2e lint types fmt demo layout
+.PHONY: help install lock verify-lock up down down-v seed run test test-int e2e lint types fmt demo layout schemas
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
@@ -70,3 +70,6 @@ demo: ## Run the demo flow
 
 layout: ## Assert the monorepo layout matches ADR-003
 	python3 scripts/check_layout.py
+
+schemas: ## Regenerate committed JSON Schema snapshots from the contracts models
+	$(UV_RUN) python scripts/gen_schemas.py

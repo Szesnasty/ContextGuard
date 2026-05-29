@@ -1,0 +1,179 @@
+{
+  "$defs": {
+    "ChunkDecision": {
+      "additionalProperties": false,
+      "description": "The guard's verdict for one chunk, with auditable reasons.",
+      "properties": {
+        "chunk_id": {
+          "title": "Chunk Id",
+          "type": "string"
+        },
+        "outcome": {
+          "$ref": "#/$defs/Outcome"
+        },
+        "policies_triggered": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Policies Triggered",
+          "type": "array"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "required": [
+        "chunk_id",
+        "outcome"
+      ],
+      "title": "ChunkDecision",
+      "type": "object"
+    },
+    "EvidenceMetrics": {
+      "additionalProperties": false,
+      "description": "Aggregate counters describing one guarded query.",
+      "properties": {
+        "chunks_allowed": {
+          "default": 0,
+          "title": "Chunks Allowed",
+          "type": "integer"
+        },
+        "chunks_blocked": {
+          "default": 0,
+          "title": "Chunks Blocked",
+          "type": "integer"
+        },
+        "chunks_redacted": {
+          "default": 0,
+          "title": "Chunks Redacted",
+          "type": "integer"
+        },
+        "chunks_retrieved": {
+          "default": 0,
+          "title": "Chunks Retrieved",
+          "type": "integer"
+        },
+        "tokens_after": {
+          "default": 0,
+          "title": "Tokens After",
+          "type": "integer"
+        },
+        "tokens_before": {
+          "default": 0,
+          "title": "Tokens Before",
+          "type": "integer"
+        }
+      },
+      "title": "EvidenceMetrics",
+      "type": "object"
+    },
+    "Outcome": {
+      "description": "What the guard decided to do with a single chunk.",
+      "enum": [
+        "allowed",
+        "blocked",
+        "redacted"
+      ],
+      "title": "Outcome",
+      "type": "string"
+    },
+    "UserContext": {
+      "additionalProperties": false,
+      "description": "Who is asking, and under what authority \u2014 the input to policy.",
+      "properties": {
+        "labels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array"
+        },
+        "purpose": {
+          "title": "Purpose",
+          "type": "string"
+        },
+        "role": {
+          "title": "Role",
+          "type": "string"
+        },
+        "sub": {
+          "title": "Sub",
+          "type": "string"
+        },
+        "tenant": {
+          "title": "Tenant",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sub",
+        "tenant",
+        "role",
+        "purpose"
+      ],
+      "title": "UserContext",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The public, versioned audit record for one guarded query (v0).\n\nThis is the contract ADR-004 promises stays semver-stable. The JSON Schema\nsnapshot test makes any change to its shape a deliberate, reviewed act.",
+  "properties": {
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "decisions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/ChunkDecision"
+      },
+      "title": "Decisions",
+      "type": "array"
+    },
+    "metrics": {
+      "$ref": "#/$defs/EvidenceMetrics"
+    },
+    "policies_triggered": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Policies Triggered",
+      "type": "array"
+    },
+    "query": {
+      "title": "Query",
+      "type": "string"
+    },
+    "query_id": {
+      "title": "Query Id",
+      "type": "string"
+    },
+    "schema_version": {
+      "const": "0.1",
+      "default": "0.1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "user": {
+      "$ref": "#/$defs/UserContext"
+    }
+  },
+  "required": [
+    "query_id",
+    "user",
+    "query",
+    "metrics",
+    "created_at"
+  ],
+  "title": "EvidenceRecord",
+  "type": "object"
+}

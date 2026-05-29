@@ -23,6 +23,7 @@ dev = [
     "psycopg[binary]>=3.2",
     "redis>=5",
     "httpx2>=2.2.0",
+    "types-PyYAML>=6",
 ]
 
 [tool.ruff]

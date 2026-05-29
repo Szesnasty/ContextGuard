@@ -1,26 +1,28 @@
-"""ContextGuard shared contracts — the single source of truth (ADR-004).
+"""Canonical domain vocabulary for the core (ADR-004).
 
-Import the domain vocabulary from here:
-
-    from contextguard_contracts import Chunk, GuardedContext, EvidenceRecord
+Core modules import domain types *only* from here, never directly from
+``contextguard_contracts``. This gives the adapter import-gate a single stable
+surface to guard and decouples ``core`` from where the contracts physically
+live. These are re-exports (identity-preserving), not redefinitions.
 """
 
 from __future__ import annotations
 
-from .enums import Classification, Outcome, RiskType, SpanType
-from .models import (
+from contextguard_contracts import (
     EVIDENCE_SCHEMA_VERSION,
     Chunk,
     ChunkDecision,
+    Classification,
     EvidenceMetrics,
     EvidenceRecord,
     GuardedContext,
+    Outcome,
     RiskSignal,
+    RiskType,
     Span,
+    SpanType,
     UserContext,
 )
-
-__version__ = "0.0.0"
 
 __all__ = [
     "EVIDENCE_SCHEMA_VERSION",
@@ -36,5 +38,4 @@ __all__ = [
     "Span",
     "SpanType",
     "UserContext",
-    "__version__",
 ]
