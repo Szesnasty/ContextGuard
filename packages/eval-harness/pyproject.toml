@@ -1,0 +1,18 @@
+[project]
+name = "contextguard-eval-harness"
+version = "0.0.0"
+description = "ContextGuard evaluation + red-team harness"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "contextguard-contracts",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contextguard_eval_harness"]
+
+[tool.uv.sources]
+contextguard-contracts = { workspace = true }

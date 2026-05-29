@@ -55,7 +55,7 @@ def check_labs_absent() -> list[str]:
 
 def _tracked_markdown_files() -> list[Path]:
     out = subprocess.run(
-        ["git", "ls-files", "*.md"],
+        ["git", "ls-files", "*.md"],  # noqa: S607
         cwd=ROOT,
         capture_output=True,
         text=True,
