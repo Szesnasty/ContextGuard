@@ -5,6 +5,8 @@ description = "ContextGuard evaluation + red-team harness"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "contextguard-contracts",
+    "contextguard",
+    "contextguard-policy-dsl",
     "hypothesis>=6",
 ]
 
@@ -17,3 +19,5 @@ packages = ["src/contextguard_eval_harness"]
 
 [tool.uv.sources]
 contextguard-contracts = { workspace = true }
+contextguard = { workspace = true }
+contextguard-policy-dsl = { workspace = true }

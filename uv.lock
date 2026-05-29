@@ -142,13 +142,17 @@ name = "contextguard-eval-harness"
 version = "0.0.0"
 source = { editable = "packages/eval-harness" }
 dependencies = [
+    { name = "contextguard" },
     { name = "contextguard-contracts" },
+    { name = "contextguard-policy-dsl" },
     { name = "hypothesis" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "contextguard", editable = "packages/contextguard" },
     { name = "contextguard-contracts", editable = "packages/contracts" },
+    { name = "contextguard-policy-dsl", editable = "packages/policy-dsl" },
     { name = "hypothesis", specifier = ">=6" },
 ]
 
