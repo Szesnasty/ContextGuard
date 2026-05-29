@@ -16,13 +16,23 @@ from __future__ import annotations
 from contextguard_policy_dsl import Effect, PolicyEngine
 
 from contextguard.core.pipeline import PipelineContext
-from contextguard.core.types import ChunkDecision, Outcome
+from contextguard.core.types import Chunk, ChunkDecision, Outcome
+from contextguard.risk import risk_score
 
 _EFFECT_TO_OUTCOME: dict[Effect, Outcome] = {
     Effect.ALLOW: Outcome.ALLOWED,
     Effect.DENY: Outcome.BLOCKED,
     Effect.REDACT: Outcome.REDACTED,
 }
+
+
+def _chunk_view(chunk: Chunk) -> dict[str, object]:
+    """Dump a chunk plus derived risk scalars the policy can match on (ADR-005)."""
+    view = chunk.model_dump(mode="json")
+    view["pii_count"] = len(chunk.pii_spans)
+    view["secret_count"] = len(chunk.secret_spans)
+    view["risk_score"] = risk_score(chunk.risk_signals)
+    return view
 
 
 class PolicyStage:
@@ -39,9 +49,7 @@ class PolicyStage:
         for chunk in ctx.candidate_chunks:
             if ctx.is_decided(chunk.id):
                 continue
-            decision = self._engine.evaluate(
-                {"user": user_view, "chunk": chunk.model_dump(mode="json")}
-            )
+            decision = self._engine.evaluate({"user": user_view, "chunk": _chunk_view(chunk)})
             ctx.mark_decided(
                 ChunkDecision(
                     chunk_id=chunk.id,

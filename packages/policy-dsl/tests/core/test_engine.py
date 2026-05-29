@@ -139,3 +139,36 @@ def test_redact_effect() -> None:
         {"user": {"roles": []}, "chunk": {"classification": "internal"}}
     )
     assert decision.effect is Effect.REDACT
+
+
+def test_numeric_ordered_comparison() -> None:
+    policy = Policy.from_dict(
+        {
+            "rules": [
+                {
+                    "id": "redact-secrets",
+                    "effect": "redact",
+                    "when": [{"field": "chunk.secret_count", "op": "gte", "value": 1}],
+                }
+            ]
+        }
+    )
+    engine = PolicyEngine(policy)
+    assert engine.evaluate({"user": {}, "chunk": {"secret_count": 2}}).effect is Effect.REDACT
+    assert engine.evaluate({"user": {}, "chunk": {"secret_count": 0}}).effect is Effect.ALLOW
+
+
+def test_ordered_comparison_missing_field_does_not_match() -> None:
+    policy = Policy.from_dict(
+        {
+            "rules": [
+                {
+                    "id": "risky",
+                    "effect": "deny",
+                    "when": [{"field": "chunk.risk_score", "op": "gt", "value": 0.5}],
+                }
+            ]
+        }
+    )
+    # field absent -> no match -> default allow
+    assert PolicyEngine(policy).evaluate({"user": {}, "chunk": {}}).effect is Effect.ALLOW

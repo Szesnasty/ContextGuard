@@ -6,6 +6,10 @@
 #      confidential-or-higher chunks (ordered comparison)
 #   3. role inheritance  — `manager` inherits `sales`, so the gate applies to it too
 #
+# Plus the A4 detect→decide→redact loop:
+#   4. redact-secrets — any chunk the detectors flag as carrying a secret is
+#      redacted (text masked) before it reaches the model (numeric risk input)
+#
 # Rules are evaluated by descending priority; the first fully-matching rule wins.
 # If none match, `default_effect` applies. Any `deny` removes the chunk.
 version: 1
@@ -30,3 +34,10 @@ rules:
     when:
       - { field: user.roles, op: contains, value: sales }
       - { field: chunk.classification, op: gte, value: confidential }
+
+  - id: redact-secrets
+    description: Mask any chunk the detectors flagged as carrying a secret.
+    effect: redact
+    priority: 40
+    when:
+      - { field: chunk.secret_count, op: gte, value: 1 }

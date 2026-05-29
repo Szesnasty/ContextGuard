@@ -78,6 +78,13 @@ def test_ordered_op_requires_classification_literal() -> None:
         Condition(field="chunk.classification", op=Operator.GTE, value="nonsense")
 
 
+def test_ordered_op_accepts_number() -> None:
+    Condition(field="chunk.secret_count", op=Operator.GTE, value=1)  # ok
+    Condition(field="chunk.risk_score", op=Operator.GT, value=0.5)  # ok
+    with pytest.raises(ValidationError, match="number or a classification"):
+        Condition(field="chunk.secret_count", op=Operator.GTE, value=True)
+
+
 def test_in_requires_list() -> None:
     Condition(field="user.role", op=Operator.IN, value=["a", "b"])  # ok
     with pytest.raises(ValidationError, match="list"):

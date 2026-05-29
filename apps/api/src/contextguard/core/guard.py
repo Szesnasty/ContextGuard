@@ -1,14 +1,16 @@
-"""The ContextGuard entry point — phase-1 pass-through (ADR-004, ADR-010).
+"""The ContextGuard entry point — the three lines of defense (ADR-004, ADR-005).
 
-``ContextGuard.guard()`` is the signature the whole product is built around. In
-phase 1 it is a **deliberately insecure pass-through**: it allows every chunk,
-counts tokens, and emits one ``allowed`` decision per chunk. This freezes the
-end-to-end shape before any logic exists, so phases 3-5 are edits, not rewrites.
+``ContextGuard.guard()`` is the signature the whole product is built around.
+Without a policy it is a deliberately permissive pass-through (zero-infra
+default). With a policy it runs the three lines of defense in one in-memory
+pipeline — **enrich** (PII/secret/injection detection), **policy** (per-chunk
+allow/block/redact at mid-retrieval), **redact** (mask the text of redacted
+chunks) — then composes the survivors under an optional token budget and emits
+one evidence record.
 
-It is also the exact object a Tier B drop-in user imports: it runs with nothing
-but ``local core install`` — no DB, no network, no frameworks (ADR-010).
-``from_policy()`` builds a guard from a YAML file with zero infra; in phase 1 the
-policy is loaded but not yet enforced (the DSL lands in Milestone A3).
+It is the exact object a Tier B drop-in user imports: it runs with nothing but
+``local core install`` — no DB, no network, no frameworks (ADR-010).
+``from_policy()`` builds a guard from a YAML file with zero infra.
 """
 
 from __future__ import annotations
@@ -20,9 +22,11 @@ from uuid import uuid4
 import yaml
 from contextguard_policy_dsl import Policy, PolicyEngine
 
+from contextguard.core.enrichment_stage import EnrichmentStage
 from contextguard.core.evidence_jsonl import JsonlEvidenceSink
-from contextguard.core.pipeline import Pipeline, PipelineContext, PostRetrieval, PreRetrieval
+from contextguard.core.pipeline import Pipeline, PipelineContext
 from contextguard.core.policy_stage import PolicyStage
+from contextguard.core.redaction_stage import RedactionStage
 from contextguard.core.tokens import TokenCounter, count_chunk_tokens
 from contextguard.core.types import (
     Chunk,
@@ -44,16 +48,18 @@ class ContextGuard:
         policy: Policy | None = None,
         evidence_path: str | Path | None = None,
         counter: TokenCounter | None = None,
+        token_budget: int | None = None,
         pipeline: Pipeline | None = None,
     ) -> None:
         self.policy = policy
         self._counter = counter
+        self._token_budget = token_budget
         if pipeline is not None:
             self._pipeline = pipeline
         elif policy is not None:
-            # Mid-retrieval policy enforcement between the pre/post no-op seams.
+            # Three lines of defense (ADR-005): enrich → policy → redact.
             self._pipeline = Pipeline(
-                [PreRetrieval(), PolicyStage(PolicyEngine(policy)), PostRetrieval()]
+                [EnrichmentStage(), PolicyStage(PolicyEngine(policy)), RedactionStage()]
             )
         else:
             self._pipeline = Pipeline()
@@ -65,6 +71,7 @@ class ContextGuard:
         path: str | Path,
         *,
         evidence_path: str | Path | None = None,
+        token_budget: int | None = None,
     ) -> ContextGuard:
         """Build a guard from a YAML policy file — zero infra (ADR-010).
 
@@ -75,7 +82,11 @@ class ContextGuard:
         data = yaml.safe_load(raw) or {}
         if not isinstance(data, dict):
             raise ValueError("policy file must contain a YAML mapping")
-        return cls(policy=Policy.from_dict(data), evidence_path=evidence_path)
+        return cls(
+            policy=Policy.from_dict(data),
+            evidence_path=evidence_path,
+            token_budget=token_budget,
+        )
 
     def guard(
         self,
@@ -83,7 +94,7 @@ class ContextGuard:
         query: str,
         candidate_chunks: list[Chunk],
     ) -> GuardedContext:
-        """Return a guarded context. Phase 1: allow everything, count tokens."""
+        """Run the three lines of defense and assemble a guarded context."""
         ctx = PipelineContext(
             user=user,
             query=query,
@@ -93,18 +104,23 @@ class ContextGuard:
 
         decisions: list[ChunkDecision] = []
         allowed: list[Chunk] = []
-        for chunk in candidate_chunks:
+        # Iterate the post-pipeline chunks: enriched, and redacted where decided.
+        for chunk in ctx.candidate_chunks:
             decision = ctx.decisions.get(chunk.id) or ChunkDecision(
                 chunk_id=chunk.id,
                 outcome=Outcome.ALLOWED,
-                reasons=["phase1-passthrough"],
+                reasons=["passthrough"],
             )
             decisions.append(decision)
-            # Allowed and redacted chunks both reach the context; redaction of
-            # text content is applied later (phase 5). Blocked chunks are dropped.
+            # Allowed and redacted chunks both reach the context (redacted text is
+            # already masked by RedactionStage). Blocked chunks are dropped.
             if decision.outcome in (Outcome.ALLOWED, Outcome.REDACTED):
                 allowed.append(chunk)
 
+        allowed, decisions = self._apply_token_budget(allowed, decisions)
+
+        # tokens_before = everything retrieved (pre-redaction); tokens_after =
+        # what actually reaches the model (blocked dropped, redacted masked).
         tokens_before = count_chunk_tokens(
             [c.text for c in candidate_chunks], counter=self._counter
         )
@@ -118,6 +134,42 @@ class ContextGuard:
         )
         self._emit_evidence(user, query, result)
         return result
+
+    def _apply_token_budget(
+        self, allowed: list[Chunk], decisions: list[ChunkDecision]
+    ) -> tuple[list[Chunk], list[ChunkDecision]]:
+        """Drop lowest-ranked allowed chunks that overflow the token budget.
+
+        The composer assembles chunks in input (rank) order; once the budget is
+        exhausted the remaining chunks are dropped and their decision flips to
+        ``BLOCKED`` with an attributed reason, so the drop is auditable.
+        """
+        if self._token_budget is None:
+            return allowed, decisions
+        kept: list[Chunk] = []
+        dropped: set[str] = set()
+        used = 0
+        for chunk in allowed:
+            cost = count_chunk_tokens([chunk.text], counter=self._counter)
+            if used + cost > self._token_budget:
+                dropped.add(chunk.id)
+                continue
+            used += cost
+            kept.append(chunk)
+        if not dropped:
+            return allowed, decisions
+        rewritten = [
+            ChunkDecision(
+                chunk_id=d.chunk_id,
+                outcome=Outcome.BLOCKED,
+                reasons=[*d.reasons, "token-budget-exceeded"],
+                policies_triggered=d.policies_triggered,
+            )
+            if d.chunk_id in dropped
+            else d
+            for d in decisions
+        ]
+        return kept, rewritten
 
     def last_evidence(self) -> dict[str, object] | None:
         """Return the most recent evidence record as a plain dict (ADR-010)."""

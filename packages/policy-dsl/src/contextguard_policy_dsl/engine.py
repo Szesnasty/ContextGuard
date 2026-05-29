@@ -52,6 +52,15 @@ def _rank(value: Any) -> int:
     return CLASSIFICATION_ORDER[value]
 
 
+def _orderable(value: Any) -> float | int:
+    """Map a value to a comparable number: numbers as-is, classification by rank."""
+    if isinstance(value, bool):
+        raise ValueError("booleans are not orderable")
+    if isinstance(value, (int, float)):
+        return value
+    return _rank(value)
+
+
 def _match(condition: Condition, context: Mapping[str, Any]) -> bool:
     left = _resolve(context, condition.field)
     if left is _MISSING:
@@ -76,7 +85,10 @@ def _match(condition: Condition, context: Mapping[str, Any]) -> bool:
     if op is Operator.CONTAINS:
         return isinstance(left, (list, tuple, set, str)) and right in left
     if op in {Operator.GT, Operator.GTE, Operator.LT, Operator.LTE}:
-        lo, hi = _rank(left), _rank(right)
+        try:
+            lo, hi = _orderable(left), _orderable(right)
+        except ValueError:
+            return False
         if op is Operator.GT:
             return lo > hi
         if op is Operator.GTE:

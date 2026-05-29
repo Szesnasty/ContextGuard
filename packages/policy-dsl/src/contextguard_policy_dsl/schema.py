@@ -57,6 +57,15 @@ _ORDERED = {Operator.GT, Operator.GTE, Operator.LT, Operator.LTE}
 _REF_ALLOWED = {Operator.EQ, Operator.NEQ}
 
 
+def _is_orderable(value: Any) -> bool:
+    """Ordered operators accept a plain number or a classification literal."""
+    if isinstance(value, bool):
+        return False
+    if isinstance(value, (int, float)):
+        return True
+    return isinstance(value, str) and value in CLASSIFICATION_ORDER
+
+
 class Condition(BaseModel):
     """One comparison over a named field of the evaluation context.
 
@@ -82,12 +91,10 @@ class Condition(BaseModel):
         elif self.value is None:
             raise ValueError("condition must set either 'value' or 'ref'")
 
-        if self.op in _ORDERED and (
-            not isinstance(self.value, str) or self.value not in CLASSIFICATION_ORDER
-        ):
+        if self.op in _ORDERED and not _is_orderable(self.value):
             raise ValueError(
-                f"ordered operator '{self.op}' requires a classification literal "
-                f"(one of {sorted(CLASSIFICATION_ORDER)})"
+                f"ordered operator '{self.op}' requires a number or a classification "
+                f"literal (one of {sorted(CLASSIFICATION_ORDER)})"
             )
         if self.op in {Operator.IN, Operator.NOT_IN} and not isinstance(self.value, list):
             raise ValueError(f"operator '{self.op}' requires a list value")
