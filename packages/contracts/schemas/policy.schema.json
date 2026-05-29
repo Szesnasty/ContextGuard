@@ -1,0 +1,155 @@
+{
+  "$defs": {
+    "Condition": {
+      "additionalProperties": false,
+      "description": "One comparison over a named field of the evaluation context.\n\n``field`` is a dotted path such as ``user.role`` or ``chunk.classification``.\nCompare against a literal ``value`` or, for ``eq``/``neq``, another field via\n``ref`` (e.g. ``chunk.tenant neq user.tenant`` for tenant isolation).",
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "op": {
+          "$ref": "#/$defs/Operator"
+        },
+        "ref": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ref"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        }
+      },
+      "required": [
+        "field",
+        "op"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "Effect": {
+      "description": "What a matching rule does to a chunk.",
+      "enum": [
+        "allow",
+        "deny",
+        "redact"
+      ],
+      "title": "Effect",
+      "type": "string"
+    },
+    "Operator": {
+      "description": "The closed set of comparison operators a condition may use.",
+      "enum": [
+        "eq",
+        "neq",
+        "in",
+        "not_in",
+        "contains",
+        "gt",
+        "gte",
+        "lt",
+        "lte"
+      ],
+      "title": "Operator",
+      "type": "string"
+    },
+    "RoleDef": {
+      "additionalProperties": false,
+      "description": "Role inheritance: a role transitively gains the roles it ``inherits``.",
+      "properties": {
+        "inherits": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Inherits",
+          "type": "array"
+        }
+      },
+      "title": "RoleDef",
+      "type": "object"
+    },
+    "Rule": {
+      "additionalProperties": false,
+      "description": "A named, prioritised rule: if every ``when`` condition holds, apply ``effect``.",
+      "properties": {
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "effect": {
+          "$ref": "#/$defs/Effect"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "default": 0,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "when": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "When",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "effect"
+      ],
+      "title": "Rule",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "A complete, validated policy document.",
+  "properties": {
+    "default_effect": {
+      "$ref": "#/$defs/Effect",
+      "default": "allow"
+    },
+    "roles": {
+      "additionalProperties": {
+        "$ref": "#/$defs/RoleDef"
+      },
+      "default": {},
+      "title": "Roles",
+      "type": "object"
+    },
+    "rules": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Rule"
+      },
+      "title": "Rules",
+      "type": "array"
+    },
+    "version": {
+      "default": 1,
+      "title": "Version",
+      "type": "integer"
+    }
+  },
+  "title": "Policy",
+  "type": "object"
+}

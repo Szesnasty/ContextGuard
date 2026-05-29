@@ -80,7 +80,8 @@ def test_from_policy_zero_infra(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(socket, "socket", _boom)
     guard = ContextGuard.from_policy(policy_file)
-    assert guard.policy == {"version": 1, "rules": []}
+    assert guard.policy is not None
+    assert guard.policy.version == 1
     result = guard.guard(_user(), "hi", _chunks(1))
     assert len(result.allowed_chunks) == 1
 

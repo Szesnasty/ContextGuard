@@ -22,6 +22,7 @@ from contextguard_contracts import (
     GuardedContext,
     UserContext,
 )
+from contextguard_policy_dsl import Policy
 from pydantic import BaseModel
 
 # Types whose JSON Schema we publish. Consumed later by the Monaco policy editor
@@ -31,6 +32,7 @@ EXPORTED: dict[str, type[BaseModel]] = {
     "chunk": Chunk,
     "guarded_context": GuardedContext,
     "user_context": UserContext,
+    "policy": Policy,
 }
 
 SCHEMA_DIR = Path(__file__).resolve().parent.parent / "packages" / "contracts" / "schemas"

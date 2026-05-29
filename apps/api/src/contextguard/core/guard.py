@@ -15,13 +15,14 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 from uuid import uuid4
 
 import yaml
+from contextguard_policy_dsl import Policy, PolicyEngine
 
 from contextguard.core.evidence_jsonl import JsonlEvidenceSink
-from contextguard.core.pipeline import Pipeline, PipelineContext
+from contextguard.core.pipeline import Pipeline, PipelineContext, PostRetrieval, PreRetrieval
+from contextguard.core.policy_stage import PolicyStage
 from contextguard.core.tokens import TokenCounter, count_chunk_tokens
 from contextguard.core.types import (
     Chunk,
@@ -35,19 +36,27 @@ from contextguard.core.types import (
 
 
 class ContextGuard:
-    """Policy-aware context firewall. Phase 1: pass-through, zero-infra."""
+    """Policy-aware context firewall. Without a policy: pass-through, zero-infra."""
 
     def __init__(
         self,
         *,
-        policy: dict[str, Any] | None = None,
+        policy: Policy | None = None,
         evidence_path: str | Path | None = None,
         counter: TokenCounter | None = None,
         pipeline: Pipeline | None = None,
     ) -> None:
         self.policy = policy
         self._counter = counter
-        self._pipeline = pipeline or Pipeline()
+        if pipeline is not None:
+            self._pipeline = pipeline
+        elif policy is not None:
+            # Mid-retrieval policy enforcement between the pre/post no-op seams.
+            self._pipeline = Pipeline(
+                [PreRetrieval(), PolicyStage(PolicyEngine(policy)), PostRetrieval()]
+            )
+        else:
+            self._pipeline = Pipeline()
         self._sink = JsonlEvidenceSink(evidence_path)
 
     @classmethod
@@ -59,14 +68,14 @@ class ContextGuard:
     ) -> ContextGuard:
         """Build a guard from a YAML policy file — zero infra (ADR-010).
 
-        The policy is parsed and attached now; enforcement arrives in Milestone
-        A3. No DB and no network are touched.
+        The policy is parsed, validated, and enforced per chunk at mid-retrieval.
+        No DB and no network are touched.
         """
         raw = Path(path).read_text(encoding="utf-8")
-        policy = yaml.safe_load(raw) or {}
-        if not isinstance(policy, dict):
+        data = yaml.safe_load(raw) or {}
+        if not isinstance(data, dict):
             raise ValueError("policy file must contain a YAML mapping")
-        return cls(policy=policy, evidence_path=evidence_path)
+        return cls(policy=Policy.from_dict(data), evidence_path=evidence_path)
 
     def guard(
         self,
@@ -91,7 +100,9 @@ class ContextGuard:
                 reasons=["phase1-passthrough"],
             )
             decisions.append(decision)
-            if decision.outcome == Outcome.ALLOWED:
+            # Allowed and redacted chunks both reach the context; redaction of
+            # text content is applied later (phase 5). Blocked chunks are dropped.
+            if decision.outcome in (Outcome.ALLOWED, Outcome.REDACTED):
                 allowed.append(chunk)
 
         tokens_before = count_chunk_tokens(
@@ -121,13 +132,19 @@ class ContextGuard:
             tokens_before=result.tokens_before,
             tokens_after=result.tokens_after,
         )
+        # Unique rule ids that fired, in first-seen order.
+        triggered: list[str] = []
+        for decision in result.decisions:
+            for rule_id in decision.policies_triggered:
+                if rule_id not in triggered:
+                    triggered.append(rule_id)
         record = EvidenceRecord(
             query_id=str(uuid4()),
             user=user,
             query=query,
             decisions=result.decisions,
             metrics=metrics,
-            policies_triggered=[],
+            policies_triggered=triggered,
             created_at=datetime.now(UTC),
         )
         self._sink.emit(record)
