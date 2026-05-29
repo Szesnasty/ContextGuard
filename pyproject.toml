@@ -22,6 +22,7 @@ dev = [
     "hypothesis>=6",
     "psycopg[binary]>=3.2",
     "redis>=5",
+    "httpx2>=2.2.0",
 ]
 
 [tool.ruff]
@@ -39,6 +40,12 @@ ignore = ["S101"]  # assert is fine in tests
 [tool.mypy]
 python_version = "3.12"
 strict = true
+mypy_path = [
+    "apps/api/src",
+    "packages/contracts/src",
+    "packages/policy-dsl/src",
+    "packages/eval-harness/src",
+]
 files = ["apps/api/src", "packages"]
 namespace_packages = true
 explicit_package_bases = true
@@ -49,4 +56,5 @@ asyncio_mode = "auto"
 testpaths = ["apps", "packages"]
 markers = [
     "integration: requires the local compose stack (run `make up` first)",
+    "e2e: full end-to-end flow (slowest tier)",
 ]

@@ -3,7 +3,7 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down down-v seed test e2e lint types fmt demo layout
+.PHONY: help install lock verify-lock up down down-v seed run test test-int e2e lint types fmt demo layout
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
@@ -17,7 +17,7 @@ help: ## List available targets
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install deps EXACTLY as locked (no drift, no resolution)
-	uv sync --frozen
+	uv sync --frozen --all-packages
 	pnpm install --frozen-lockfile
 
 lock: ## Intentionally update lockfiles (review the diff before commit!)
@@ -40,9 +40,15 @@ down-v: ## DESTRUCTIVE: stop the stack AND delete all volumes (data loss!)
 seed: ## Load tenant + policy fixtures
 	@echo "seed: not implemented in phase 0"
 
-test: ## Run Python + JS unit tests
-	$(UV_RUN) pytest
+run: ## Run the API locally (uvicorn, reload)
+	$(UV_RUN) uvicorn contextguard.api.app:create_app --factory --reload --port 8000
+
+test: ## Run the core test tier (no infra) + JS unit tests
+	$(UV_RUN) pytest -m "not integration and not e2e"
 	pnpm -r --if-present test
+
+test-int: ## Run integration tier (needs `make up`)
+	$(UV_RUN) pytest -m integration
 
 e2e: ## Run end-to-end tests (Playwright)
 	@echo "e2e: not implemented in phase 0"

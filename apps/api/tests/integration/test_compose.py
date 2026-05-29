@@ -66,9 +66,7 @@ def test_redis_roundtrip() -> None:
 
 @requires_stack
 def test_ollama_reachable() -> None:
-    with urllib.request.urlopen(
-        f"http://localhost:{OLLAMA_PORT}/api/tags", timeout=5
-    ) as resp:
+    with urllib.request.urlopen(f"http://localhost:{OLLAMA_PORT}/api/tags", timeout=5) as resp:
         assert resp.status == 200
 
 
