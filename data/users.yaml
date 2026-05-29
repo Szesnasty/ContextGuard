@@ -1,0 +1,28 @@
+# Demo identities for the seed corpus.
+#
+# These map onto `UserContext` (sub, tenant, role, purpose). They are defined
+# here now (build plan step 02-baseline-rag/01-seed-corpus.md item 4) and are
+# consumed for real by the policy layer / JWT stub in Milestone B3. The
+# `test_users_yaml_schema` test asserts every entry validates as a UserContext.
+
+users:
+  - sub: sales@acme
+    tenant: acme
+    role: sales
+    purpose: support
+  - sub: legal@acme
+    tenant: acme
+    role: legal
+    purpose: audit
+  - sub: admin@acme
+    tenant: acme
+    role: admin
+    purpose: dev
+  - sub: support@acme
+    tenant: acme
+    role: support
+    purpose: support
+  - sub: user@contoso
+    tenant: contoso
+    role: sales
+    purpose: support

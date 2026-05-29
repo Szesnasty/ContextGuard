@@ -8,6 +8,7 @@ dependencies = [
     "contextguard",
     "contextguard-policy-dsl",
     "hypothesis>=6",
+    "pyyaml>=6",
 ]
 
 [build-system]

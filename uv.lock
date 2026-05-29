@@ -146,6 +146,7 @@ dependencies = [
     { name = "contextguard-contracts" },
     { name = "contextguard-policy-dsl" },
     { name = "hypothesis" },
+    { name = "pyyaml" },
 ]
 
 [package.metadata]
@@ -154,6 +155,7 @@ requires-dist = [
     { name = "contextguard-contracts", editable = "packages/contracts" },
     { name = "contextguard-policy-dsl", editable = "packages/policy-dsl" },
     { name = "hypothesis", specifier = ">=6" },
+    { name = "pyyaml", specifier = ">=6" },
 ]
 
 [[package]]
