@@ -23,6 +23,17 @@ from typing import Protocol, runtime_checkable
 _TOKEN_RE = re.compile(r"\w+|[^\w\s]", re.UNICODE)
 
 
+def token_spans(text: str) -> list[tuple[int, int]]:
+    """Return ``(start, end)`` character offsets of each token in ``text``.
+
+    Uses the same regex as :class:`RegexTokenCounter`, so a window of N spans
+    contains exactly N tokens by :func:`count_tokens`. Offsets index the original
+    string, which lets a token-windowed chunker slice text without losing the
+    original whitespace between tokens.
+    """
+    return [(m.start(), m.end()) for m in _TOKEN_RE.finditer(text)]
+
+
 @runtime_checkable
 class TokenCounter(Protocol):
     """Anything that can count tokens in a string."""
@@ -62,4 +73,5 @@ __all__ = [
     "count_chunk_tokens",
     "count_tokens",
     "default_counter",
+    "token_spans",
 ]
