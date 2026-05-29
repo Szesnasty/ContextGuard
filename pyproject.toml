@@ -6,7 +6,7 @@ requires-python = ">=3.12,<3.13"
 
 [tool.uv.workspace]
 members = [
-    "apps/api",
+    "packages/contextguard",
     "packages/contracts",
     "packages/policy-dsl",
     "packages/eval-harness",
@@ -24,12 +24,17 @@ dev = [
     "redis>=5",
     "httpx2>=2.2.0",
     "types-PyYAML>=6",
+    # Adapter (Tier A) deps needed to test contextguard.api; end users get these
+    # via `local core install[api]` (ADR-013).
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "structlog>=24",
 ]
 
 [tool.ruff]
 target-version = "py312"
 line-length = 100
-src = ["apps/api/src", "packages"]
+src = ["packages"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "C4", "SIM", "RUF"]
@@ -42,12 +47,17 @@ ignore = ["S101"]  # assert is fine in tests
 python_version = "3.12"
 strict = true
 mypy_path = [
-    "apps/api/src",
+    "packages/contextguard/src",
     "packages/contracts/src",
     "packages/policy-dsl/src",
     "packages/eval-harness/src",
 ]
-files = ["apps/api/src", "packages"]
+files = [
+    "packages/contextguard/src",
+    "packages/contracts/src",
+    "packages/policy-dsl/src",
+    "packages/eval-harness/src",
+]
 namespace_packages = true
 explicit_package_bases = true
 

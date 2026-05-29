@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI
-
 from contextguard.api.app import create_app
+from fastapi import FastAPI
 
 
 def test_create_app_returns_fastapi() -> None:

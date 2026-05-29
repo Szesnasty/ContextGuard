@@ -7,12 +7,11 @@ reused by the phase-4 policy fuzzer.
 
 from __future__ import annotations
 
+from contextguard.core import ContextGuard
+from contextguard.core.types import Chunk, Outcome, UserContext
 from contextguard_eval_harness.strategies import chunk_lists, user_contexts
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
-
-from contextguard.core import ContextGuard
-from contextguard.core.types import Chunk, Outcome, UserContext
 
 # CI runs more examples; the default profile is fine for local/dev.
 _SETTINGS = settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])

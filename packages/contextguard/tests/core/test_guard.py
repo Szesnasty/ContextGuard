@@ -6,7 +6,6 @@ import socket
 from pathlib import Path
 
 import pytest
-
 from contextguard.core import ContextGuard
 from contextguard.core.types import Chunk, Classification, Outcome, UserContext
 
@@ -156,3 +155,28 @@ def test_no_heavy_imports() -> None:
         check=False,
     )
     assert proc.returncode == 0, f"heavy imports pulled by core: {proc.stdout.strip()}"
+
+
+def test_public_top_level_import() -> None:
+    """`from contextguard import ContextGuard` works and stays zero-infra (ADR-013).
+
+    This is the exact entry point the README quickstart and Public v0.1 promise.
+    Runs in a subprocess so the bare top-level import is measured in isolation.
+    """
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; from contextguard import ContextGuard, __version__; "
+        "assert ContextGuard.__name__ == 'ContextGuard'; "
+        "heavy={'fastapi','uvicorn','structlog','psycopg','sqlalchemy','redis'}; "
+        "bad=sorted(heavy & set(sys.modules)); "
+        "print(','.join(bad)); sys.exit(1 if bad else 0)"
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, f"top-level import pulled heavy deps: {proc.stdout.strip()}"

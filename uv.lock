@@ -4,7 +4,7 @@ requires-python = "==3.12.*"
 
 [manifest]
 members = [
-    "contextguard-api",
+    "contextguard",
     "contextguard-contracts",
     "contextguard-eval-harness",
     "contextguard-policy-dsl",
@@ -97,15 +97,19 @@ wheels = [
 ]
 
 [[package]]
-name = "contextguard-api"
+name = "contextguard"
 version = "0.0.0"
-source = { editable = "apps/api" }
+source = { editable = "packages/contextguard" }
 dependencies = [
     { name = "contextguard-contracts" },
     { name = "contextguard-policy-dsl" },
-    { name = "fastapi" },
     { name = "pydantic" },
     { name = "pyyaml" },
+]
+
+[package.optional-dependencies]
+api = [
+    { name = "fastapi" },
     { name = "structlog" },
     { name = "uvicorn", extra = ["standard"] },
 ]
@@ -114,12 +118,13 @@ dependencies = [
 requires-dist = [
     { name = "contextguard-contracts", editable = "packages/contracts" },
     { name = "contextguard-policy-dsl", editable = "packages/policy-dsl" },
-    { name = "fastapi", specifier = ">=0.111" },
+    { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.111" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pyyaml", specifier = ">=6" },
-    { name = "structlog", specifier = ">=24" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
+    { name = "structlog", marker = "extra == 'api'", specifier = ">=24" },
+    { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.30" },
 ]
+provides-extras = ["api"]
 
 [[package]]
 name = "contextguard-contracts"
@@ -169,6 +174,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "fastapi" },
     { name = "httpx2" },
     { name = "hypothesis" },
     { name = "mypy" },
@@ -178,13 +184,16 @@ dev = [
     { name = "pytest-cov" },
     { name = "redis" },
     { name = "ruff" },
+    { name = "structlog" },
     { name = "types-pyyaml" },
+    { name = "uvicorn", extra = ["standard"] },
 ]
 
 [package.metadata]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "fastapi", specifier = ">=0.111" },
     { name = "httpx2", specifier = ">=2.2.0" },
     { name = "hypothesis", specifier = ">=6" },
     { name = "mypy", specifier = ">=1.11" },
@@ -194,7 +203,9 @@ dev = [
     { name = "pytest-cov", specifier = ">=5" },
     { name = "redis", specifier = ">=5" },
     { name = "ruff", specifier = ">=0.6" },
+    { name = "structlog", specifier = ">=24" },
     { name = "types-pyyaml", specifier = ">=6" },
+    { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },
 ]
 
 [[package]]

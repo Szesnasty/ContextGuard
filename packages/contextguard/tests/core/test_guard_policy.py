@@ -11,11 +11,10 @@ import socket
 from pathlib import Path
 
 import pytest
-from contextguard_eval_harness.strategies import chunk_lists, user_contexts
-from hypothesis import HealthCheck, given, settings
-
 from contextguard.core import ContextGuard
 from contextguard.core.types import Chunk, Classification, Outcome, UserContext
+from contextguard_eval_harness.strategies import chunk_lists, user_contexts
+from hypothesis import HealthCheck, given, settings
 
 POLICY_PATH = Path(__file__).resolve().parents[4] / "data" / "policies" / "example.yaml"
 

@@ -12,10 +12,9 @@ import os
 from collections.abc import Iterator
 
 import pytest
+from contextguard.api.app import create_app
 from fastapi.testclient import TestClient
 from hypothesis import settings
-
-from contextguard.api.app import create_app
 
 # Hypothesis profiles: CI runs more examples and derandomizes so failures are
 # reproducible from the printed seed; dev stays fast.

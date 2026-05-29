@@ -1,0 +1,34 @@
+[project]
+name = "contextguard"
+version = "0.0.0"
+description = "Policy-aware context firewall for production RAG — zero-infra Python library (Tier B)."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+# Zero-infra base (ADR-010): nothing heavier than pydantic + pyyaml. Every heavy
+# capability is an optional extra, imported lazily so `import contextguard.core`
+# never pulls a framework, DB, or model.
+dependencies = [
+    "pydantic>=2.7",
+    "pyyaml>=6",
+    "contextguard-contracts",
+    "contextguard-policy-dsl",
+]
+
+[project.optional-dependencies]
+# HTTP adapter (Tier A). `local core install[api]`.
+api = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+    "structlog>=24",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/contextguard"]
+
+[tool.uv.sources]
+contextguard-contracts = { workspace = true }
+contextguard-policy-dsl = { workspace = true }

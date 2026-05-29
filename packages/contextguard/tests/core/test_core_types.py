@@ -6,7 +6,6 @@ import ast
 from pathlib import Path
 
 import contextguard_contracts as cc
-
 from contextguard.core import types as core_types
 
 EXPECTED = [

@@ -14,9 +14,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-# Required top-level directories from ADR-003 §Decision.
+# Required top-level directories. ADR-003 layout as refined by ADR-013: the
+# `contextguard` library lives in packages/ (not apps/); the apps/api deployable
+# is Tier A and returns in Milestone B.
 REQUIRED_DIRS = [
-    "apps/api",
+    "packages/contextguard",
     "apps/web",
     "packages/contracts",
     "packages/policy-dsl",
