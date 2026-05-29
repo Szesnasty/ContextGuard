@@ -20,6 +20,8 @@ dev = [
     "pytest-asyncio>=0.23",
     "pytest-cov>=5",
     "hypothesis>=6",
+    "psycopg[binary]>=3.2",
+    "redis>=5",
 ]
 
 [tool.ruff]
@@ -45,3 +47,6 @@ explicit_package_bases = true
 addopts = "-q"
 asyncio_mode = "auto"
 testpaths = ["apps", "packages"]
+markers = [
+    "integration: requires the local compose stack (run `make up` first)",
+]

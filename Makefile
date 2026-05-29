@@ -3,7 +3,7 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down seed test e2e lint types fmt demo layout
+.PHONY: help install lock verify-lock up down down-v seed test e2e lint types fmt demo layout
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
@@ -28,15 +28,14 @@ verify-lock: ## Fail if lockfiles are stale vs manifests (CI gate)
 	uv lock --check
 	pnpm install --frozen-lockfile
 
-up: ## Start the local stack (compose)
-	@command -v docker >/dev/null 2>&1 \
-		&& docker compose up -d \
-		|| echo "up: compose stack not defined yet (phase 0.3)"
+up: ## Start the local stack (compose), wait until healthy
+	docker compose up -d --wait
 
-down: ## Stop the local stack
-	@command -v docker >/dev/null 2>&1 \
-		&& docker compose down \
-		|| echo "down: compose stack not defined yet (phase 0.3)"
+down: ## Stop the local stack (keeps volumes/data)
+	docker compose down
+
+down-v: ## DESTRUCTIVE: stop the stack AND delete all volumes (data loss!)
+	docker compose down -v
 
 seed: ## Load tenant + policy fixtures
 	@echo "seed: not implemented in phase 0"
