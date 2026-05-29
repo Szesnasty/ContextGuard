@@ -1,7 +1,7 @@
 # ContextGuard
 
-> **An evidence layer for RAG systems.**
-> ContextGuard enforces access policies, minimizes sensitive context, and produces an audit-ready record explaining why specific data was — or was not — sent to the model.
+> **An open-source context firewall for production RAG.**
+> It enforces access policies before documents reach the LLM, and produces replayable, audit-ready evidence for every query.
 
 Most RAG systems answer: *"Did we retrieve relevant context?"*
 ContextGuard answers: **"Were we allowed to retrieve this context — and can we prove it?"**
