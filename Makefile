@@ -3,11 +3,30 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help up down seed test e2e lint types fmt demo layout
+.PHONY: help install lock verify-lock up down seed test e2e lint types fmt demo layout
+
+# --- Supply-chain safety -----------------------------------------------------
+# Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
+# committed. Every install/run below is FROZEN: it must match the lockfile or
+# fail loudly. Versions never drift implicitly. To change a dependency you must
+# run `make lock` explicitly, which is reviewable in the diff.
+UV_RUN := uv run --frozen
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
-		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
+
+install: ## Install deps EXACTLY as locked (no drift, no resolution)
+	uv sync --frozen
+	pnpm install --frozen-lockfile
+
+lock: ## Intentionally update lockfiles (review the diff before commit!)
+	uv lock
+	pnpm install --lockfile-only
+
+verify-lock: ## Fail if lockfiles are stale vs manifests (CI gate)
+	uv lock --check
+	pnpm install --frozen-lockfile
 
 up: ## Start the local stack (compose)
 	@command -v docker >/dev/null 2>&1 \
@@ -23,22 +42,22 @@ seed: ## Load tenant + policy fixtures
 	@echo "seed: not implemented in phase 0"
 
 test: ## Run Python + JS unit tests
-	uv run pytest
+	$(UV_RUN) pytest
 	pnpm -r --if-present test
 
 e2e: ## Run end-to-end tests (Playwright)
 	@echo "e2e: not implemented in phase 0"
 
 lint: ## Lint Python + JS
-	uv run ruff check .
+	$(UV_RUN) ruff check .
 	pnpm -r --if-present lint
 
 types: ## Type-check Python (mypy) + JS (vue-tsc)
-	uv run mypy
+	$(UV_RUN) mypy
 	@echo "types(js): not implemented in phase 0"
 
 fmt: ## Format Python + JS
-	uv run ruff format .
+	$(UV_RUN) ruff format .
 	@command -v pnpm >/dev/null 2>&1 && pnpm -r --if-present format || true
 
 demo: ## Run the demo flow
