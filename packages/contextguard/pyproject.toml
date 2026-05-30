@@ -21,6 +21,7 @@ api = [
     "uvicorn[standard]>=0.30",
     "structlog>=24",
     "pyjwt>=2.8",
+    "prometheus-client>=0.20",
 ]
 # Baseline RAG store (Tier A, ADR-008). pgvector-backed vector store + migrations.
 pgvector = [

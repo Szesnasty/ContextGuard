@@ -175,6 +175,20 @@ class QueryResponse(BaseModel):
     guarded_context: GuardedContext
 
 
+class GuardRequest(BaseModel):
+    """A scan-only request: the query plus the candidate chunks to adjudicate.
+
+    Identity is NOT carried here - it is derived from the verified Bearer token
+    at the HTTP boundary (ADR-015). The caller supplies the chunks to guard, so
+    the scan runs without retrieval or a model call (Milestone B3.3).
+    """
+
+    model_config = _STRICT
+
+    query: str = Field(min_length=1)
+    candidate_chunks: list[Chunk] = []
+
+
 __all__ = [
     "EVIDENCE_SCHEMA_VERSION",
     "Chunk",
@@ -182,6 +196,7 @@ __all__ = [
     "Classification",
     "EvidenceMetrics",
     "EvidenceRecord",
+    "GuardRequest",
     "GuardedContext",
     "Outcome",
     "QueryRequest",
