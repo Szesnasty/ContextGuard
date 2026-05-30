@@ -28,6 +28,7 @@ from contextguard.retrieval.embeddings import (
     get_embedder,
 )
 from contextguard.retrieval.hybrid import reciprocal_rank_fusion
+from contextguard.retrieval.prompt import build_prompt, citation_map
 
 __all__ = [
     "BM25Index",
@@ -39,7 +40,9 @@ __all__ = [
     "OllamaEmbedder",
     "SourceDocument",
     "Vector",
+    "build_prompt",
     "chunk_corpus",
+    "citation_map",
     "get_embedder",
     "reciprocal_rank_fusion",
 ]

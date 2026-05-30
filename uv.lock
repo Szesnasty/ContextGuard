@@ -130,6 +130,9 @@ api = [
 embeddings = [
     { name = "httpx" },
 ]
+llm = [
+    { name = "httpx" },
+]
 openai = [
     { name = "openai" },
 ]
@@ -147,6 +150,7 @@ requires-dist = [
     { name = "contextguard-policy-dsl", editable = "packages/policy-dsl" },
     { name = "fastapi", marker = "extra == 'api'", specifier = ">=0.111" },
     { name = "httpx", marker = "extra == 'embeddings'", specifier = ">=0.27" },
+    { name = "httpx", marker = "extra == 'llm'", specifier = ">=0.27" },
     { name = "openai", marker = "extra == 'openai'", specifier = ">=1.30" },
     { name = "pgvector", marker = "extra == 'pgvector'", specifier = ">=0.3" },
     { name = "psycopg", extras = ["binary"], marker = "extra == 'pgvector'", specifier = ">=3.2" },
@@ -156,7 +160,7 @@ requires-dist = [
     { name = "structlog", marker = "extra == 'api'", specifier = ">=24" },
     { name = "uvicorn", extras = ["standard"], marker = "extra == 'api'", specifier = ">=0.30" },
 ]
-provides-extras = ["api", "pgvector", "embeddings", "openai"]
+provides-extras = ["api", "pgvector", "embeddings", "llm", "openai"]
 
 [[package]]
 name = "contextguard-contracts"
