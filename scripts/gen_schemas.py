@@ -20,6 +20,8 @@ from contextguard_contracts import (
     Chunk,
     EvidenceRecord,
     GuardedContext,
+    QueryRequest,
+    QueryResponse,
     UserContext,
 )
 from contextguard_policy_dsl import Policy
@@ -32,6 +34,8 @@ EXPORTED: dict[str, type[BaseModel]] = {
     "chunk": Chunk,
     "guarded_context": GuardedContext,
     "user_context": UserContext,
+    "query_request": QueryRequest,
+    "query_response": QueryResponse,
     "policy": Policy,
 }
 

@@ -46,6 +46,11 @@ src = ["packages"]
 select = ["E", "F", "I", "B", "UP", "ASYNC", "S", "C4", "SIM", "RUF"]
 ignore = ["S101"]  # assert is fine in tests
 
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom: `Depends(...)` in argument defaults is
+# intentional and safe, not the mutable-default footgun B008 guards against.
+extend-immutable-calls = ["fastapi.Depends"]
+
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S"]
 

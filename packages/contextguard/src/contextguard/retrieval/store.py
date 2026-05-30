@@ -128,4 +128,28 @@ def knn(
     ]
 
 
-__all__ = ["Neighbour", "create_schema", "get_engine", "knn", "upsert_chunks"]
+def all_chunks(engine: Engine) -> list[Chunk]:
+    """Return every stored chunk as a domain :class:`Chunk` (no embeddings).
+
+    Used to bootstrap the in-memory BM25 index from whatever is seeded in
+    pgvector, so the keyword and dense halves index the same chunk set without a
+    separate corpus source.
+    """
+    from contextguard_contracts.enums import Classification
+
+    with Session(engine) as session:
+        rows = session.execute(select(ChunkRow).order_by(ChunkRow.id)).scalars().all()
+    return [
+        Chunk(
+            id=row.id,
+            doc_id=row.doc_id,
+            tenant=row.tenant,
+            text=row.text,
+            classification=Classification(row.classification),
+            metadata=dict(row.chunk_metadata),
+        )
+        for row in rows
+    ]
+
+
+__all__ = ["Neighbour", "all_chunks", "create_schema", "get_engine", "knn", "upsert_chunks"]

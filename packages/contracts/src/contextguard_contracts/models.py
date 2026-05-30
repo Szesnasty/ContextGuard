@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import Classification, Outcome, RiskType, SpanType
 
@@ -138,6 +138,40 @@ class EvidenceRecord(BaseModel):
     created_at: datetime
 
 
+class RetrievedChunk(BaseModel):
+    """One retrieval hit returned to the caller: identity, text, fused score."""
+
+    model_config = _STRICT
+
+    id: str
+    doc_id: str
+    tenant: str
+    classification: Classification
+    text: str
+    score: float
+    metadata: dict[str, str] = {}
+
+
+class QueryRequest(BaseModel):
+    """A RAG query: who is asking, what they ask, how many chunks to retrieve."""
+
+    model_config = _STRICT
+
+    query: str = Field(min_length=1)
+    user: UserContext
+    k: int = Field(default=5, ge=1, le=50)
+
+
+class QueryResponse(BaseModel):
+    """The grounded answer plus the retrieval hits and the guard's verdict."""
+
+    model_config = _STRICT
+
+    answer: str
+    retrieved_chunks: list[RetrievedChunk] = []
+    guarded_context: GuardedContext
+
+
 __all__ = [
     "EVIDENCE_SCHEMA_VERSION",
     "Chunk",
@@ -147,6 +181,9 @@ __all__ = [
     "EvidenceRecord",
     "GuardedContext",
     "Outcome",
+    "QueryRequest",
+    "QueryResponse",
+    "RetrievedChunk",
     "RiskSignal",
     "RiskType",
     "Span",

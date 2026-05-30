@@ -23,4 +23,8 @@ def create_app() -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "version": __version__}
 
+    from contextguard.api.routers.query import router as query_router
+
+    app.include_router(query_router)
+
     return app
