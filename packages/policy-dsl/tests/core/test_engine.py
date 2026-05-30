@@ -172,3 +172,34 @@ def test_ordered_comparison_missing_field_does_not_match() -> None:
     )
     # field absent -> no match -> default allow
     assert PolicyEngine(policy).evaluate({"user": {}, "chunk": {}}).effect is Effect.ALLOW
+
+
+def test_allowed_classifications_excludes_categorically_denied() -> None:
+    """sales (acme) is denied confidential+ -> prefilter keeps only public/internal."""
+    engine = PolicyEngine(POLICY)
+    user = {"tenant": "acme", "role": "sales", "roles": ["sales"]}
+    assert engine.allowed_classifications(user) == ["public", "internal"]
+
+
+def test_allowed_classifications_full_set_when_role_not_restricted() -> None:
+    engine = PolicyEngine(POLICY)
+    user = {"tenant": "acme", "role": "legal", "roles": ["legal"]}
+    assert engine.allowed_classifications(user) == [
+        "public",
+        "internal",
+        "confidential",
+        "restricted",
+    ]
+
+
+def test_allowed_classifications_inherited_role_is_restricted() -> None:
+    """manager inherits sales -> the confidential gate still applies (sound)."""
+    engine = PolicyEngine(POLICY)
+    user = {"tenant": "acme", "role": "manager", "roles": ["manager", "sales"]}
+    assert engine.allowed_classifications(user) == ["public", "internal"]
+
+
+def test_allowed_classifications_empty_when_default_deny() -> None:
+    """A default-deny policy with no allow rule denies every classification (fail-closed)."""
+    policy = Policy.from_dict({"default_effect": "deny", "rules": []})
+    assert PolicyEngine(policy).allowed_classifications({"tenant": "acme", "roles": []}) == []

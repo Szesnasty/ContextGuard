@@ -115,16 +115,28 @@ def knn(
     query_vector: Vector,
     k: int = 5,
     filters: Mapping[str, str] | None = None,
+    *,
+    tenant: str | None = None,
+    allowed_classifications: Sequence[str] | None = None,
 ) -> list[Neighbour]:
     """Return the ``k`` nearest chunks by L2 distance, closest first.
 
-    ``filters`` maps column names to required values (applied as equality). It is
-    unused in phase 2; the parameter exists for the phase-4 policy push-down.
+    ``filters`` maps column names to required values (applied as equality). The
+    phase-4 policy push-down (ADR-005) uses the keyword-only predicates: ``tenant``
+    pins hard tenant isolation, and ``allowed_classifications`` restricts the
+    candidate set to the classifications the policy permits. Both are applied in
+    the SQL ``WHERE`` *before* the ``ORDER BY ... LIMIT``, so disallowed chunks
+    never enter the kNN candidate set. An empty ``allowed_classifications``
+    matches nothing (fail-closed).
     """
     distance = ChunkRow.embedding.l2_distance(query_vector)
     stmt = select(ChunkRow, distance.label("distance"))
     for column, value in (filters or {}).items():
         stmt = stmt.where(getattr(ChunkRow, column) == value)
+    if tenant is not None:
+        stmt = stmt.where(ChunkRow.tenant == tenant)
+    if allowed_classifications is not None:
+        stmt = stmt.where(ChunkRow.classification.in_(list(allowed_classifications)))
     stmt = stmt.order_by(distance).limit(k)
     with Session(engine) as session:
         results = session.execute(stmt).all()

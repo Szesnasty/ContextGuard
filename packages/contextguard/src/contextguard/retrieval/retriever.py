@@ -22,6 +22,7 @@ from sqlalchemy import Engine
 from contextguard.retrieval.bm25 import BM25Index
 from contextguard.retrieval.embeddings import Embedder
 from contextguard.retrieval.hybrid import reciprocal_rank_fusion
+from contextguard.retrieval.policy_filter import RetrievalFilter
 from contextguard.retrieval.store import Neighbour, knn
 
 # Defaults mirror the embeddings module: env-overridable, no central settings.
@@ -79,19 +80,38 @@ class HybridRetriever:
         query: str,
         k: int = 5,
         filters: Mapping[str, str] | None = None,
+        *,
+        prefilter: RetrievalFilter | None = None,
     ) -> list[RetrievedChunk]:
         """Return up to ``k`` chunks for ``query``, dense + BM25 fused.
 
         Each retriever contributes ``candidates`` results; the fusion keeps the
-        top ``k``. ``filters`` is forwarded to the dense kNN (unused until phase
-        4). The result text/metadata come from the dense hit when available, else
-        from the BM25 index.
+        top ``k``. ``filters`` is forwarded to the dense kNN as plain equality.
+        ``prefilter`` is the phase-4 policy push-down (ADR-005): its tenant and
+        allowed-classification predicates are applied to *both* halves - pushed
+        into the dense SQL ``WHERE`` and used to drop disallowed BM25 candidates -
+        so unauthorised chunks never enter the fused candidate set. The result
+        text/metadata come from the dense hit when available, else from the BM25
+        index.
         """
         query_vector = self._embedder.embed([query])[0]
+        tenant = prefilter.tenant if prefilter is not None else None
+        allowed = prefilter.allowed_classifications if prefilter is not None else None
         dense: list[Neighbour] = knn(
-            self._engine, query_vector, k=self._candidates, filters=filters
+            self._engine,
+            query_vector,
+            k=self._candidates,
+            filters=filters,
+            tenant=tenant,
+            allowed_classifications=allowed,
         )
         keyword = self._index.search(query, k=self._candidates)
+        if prefilter is not None:
+            keyword = [
+                (chunk_id, score)
+                for chunk_id, score in keyword
+                if self._passes_prefilter(chunk_id, prefilter)
+            ]
 
         fused = reciprocal_rank_fusion(
             [hit.id for hit in dense],
@@ -132,6 +152,21 @@ class HybridRetriever:
                 )
             )
         return results
+
+    def _passes_prefilter(self, chunk_id: str, prefilter: RetrievalFilter) -> bool:
+        """Apply the policy push-down to a BM25 candidate (in-memory half).
+
+        Mirrors the SQL predicate so the keyword half cannot surface a chunk the
+        dense half is forbidden to return. An unknown chunk id is dropped
+        (fail-closed).
+        """
+        chunk = self._index.get(chunk_id)
+        if chunk is None:
+            return False
+        if getattr(chunk, "tenant", None) != prefilter.tenant:
+            return False
+        classification = str(getattr(chunk, "classification", ""))
+        return classification in prefilter.allowed_classifications
 
 
 __all__ = ["HybridRetriever", "RetrievedChunk"]

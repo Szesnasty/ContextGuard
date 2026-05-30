@@ -121,5 +121,34 @@ class PolicyEngine:
             reasons=["default-effect"],
         )
 
+    def allowed_classifications(self, user: Mapping[str, Any]) -> list[str]:
+        """Classifications this user is not categorically denied (retrieval prefilter).
+
+        Probes every known classification (:data:`CLASSIFICATION_ORDER`) with a
+        best-case chunk - same tenant, no PII, no secrets, zero risk - and keeps
+        a classification only when even that best case does not evaluate to
+        ``deny``. A real, possibly riskier chunk of a kept classification can only
+        be decided more strictly downstream (the authoritative per-chunk pass,
+        ADR-005), so the result is sound to push into the SQL ``WHERE`` before
+        kNN: it never includes a categorically denied classification.
+
+        ``user`` is the already-prepared user view (roles expanded), exactly as
+        :meth:`evaluate` would see it. An empty result means the user is denied
+        everything - the candidate set is empty, fail-closed.
+        """
+        allowed: list[str] = []
+        tenant = user.get("tenant") if isinstance(user, Mapping) else None
+        for classification in CLASSIFICATION_ORDER:
+            probe = {
+                "tenant": tenant,
+                "classification": classification,
+                "pii_count": 0,
+                "secret_count": 0,
+                "risk_score": 0.0,
+            }
+            if self.evaluate({"user": user, "chunk": probe}).effect is not Effect.DENY:
+                allowed.append(classification)
+        return allowed
+
 
 __all__ = ["PolicyDecision", "PolicyEngine"]
