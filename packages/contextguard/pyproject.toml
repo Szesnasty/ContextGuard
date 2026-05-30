@@ -38,6 +38,11 @@ embeddings = [
 llm = [
     "httpx>=0.27",
 ]
+# Cross-encoder reranker (`bge-reranker-base`, B3.4). Heavy (pulls torch) and
+# off by default (RERANKER=none); `local core install[rerank]` to enable.
+rerank = [
+    "sentence-transformers>=3",
+]
 # Background ingestion via RQ + Redis (Tier A). `local core install[ingest]`.
 ingest = [
     "rq>=1.16",

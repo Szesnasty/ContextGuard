@@ -80,6 +80,13 @@ explicit_package_bases = true
 module = ["pgvector.*"]
 ignore_missing_imports = true
 
+[[tool.mypy.overrides]]
+# sentence-transformers is the heavy, opt-in [rerank] extra (ADR-016); it is not
+# installed in the dev/CI env, and the cross-encoder is imported lazily, so let
+# mypy resolve the lazy import without pulling torch into the frozen lockfile.
+module = ["sentence_transformers.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 addopts = "-q"
 asyncio_mode = "auto"

@@ -23,6 +23,7 @@ from contextguard.retrieval.bm25 import BM25Index
 from contextguard.retrieval.embeddings import Embedder
 from contextguard.retrieval.hybrid import reciprocal_rank_fusion
 from contextguard.retrieval.policy_filter import RetrievalFilter
+from contextguard.retrieval.rerank import Reranker, rerank_chunks, rerank_pool_size
 from contextguard.retrieval.store import Neighbour, knn
 
 # Defaults mirror the embeddings module: env-overridable, no central settings.
@@ -64,6 +65,8 @@ class HybridRetriever:
         *,
         alpha: float | None = None,
         candidates: int | None = None,
+        reranker: Reranker | None = None,
+        rerank_pool: int | None = None,
     ) -> None:
         self._engine = engine
         self._embedder = embedder
@@ -74,6 +77,8 @@ class HybridRetriever:
             if candidates is not None
             else _env_int("RETRIEVAL_CANDIDATES", _DEFAULT_CANDIDATES)
         )
+        self._reranker = reranker
+        self._rerank_pool = rerank_pool if rerank_pool is not None else rerank_pool_size()
 
     def retrieve(
         self,
@@ -93,19 +98,26 @@ class HybridRetriever:
         so unauthorised chunks never enter the fused candidate set. The result
         text/metadata come from the dense hit when available, else from the BM25
         index.
+
+        When a cross-encoder reranker is configured (B3.4, ADR-016), hybrid
+        fusion first builds a wider candidate pool (``rerank_pool``); the
+        reranker reads each ``(query, chunk)`` pair and only the top ``k`` survive
+        - the small reranked set is what proceeds to policy + redaction.
         """
+        fuse_k = max(self._rerank_pool, k) if self._reranker is not None else k
+        candidates = max(self._candidates, fuse_k)
         query_vector = self._embedder.embed([query])[0]
         tenant = prefilter.tenant if prefilter is not None else None
         allowed = prefilter.allowed_classifications if prefilter is not None else None
         dense: list[Neighbour] = knn(
             self._engine,
             query_vector,
-            k=self._candidates,
+            k=candidates,
             filters=filters,
             tenant=tenant,
             allowed_classifications=allowed,
         )
-        keyword = self._index.search(query, k=self._candidates)
+        keyword = self._index.search(query, k=candidates)
         if prefilter is not None:
             keyword = [
                 (chunk_id, score)
@@ -117,7 +129,7 @@ class HybridRetriever:
             [hit.id for hit in dense],
             [chunk_id for chunk_id, _ in keyword],
             alpha=self._alpha,
-            k=k,
+            k=fuse_k,
         )
 
         dense_by_id = {hit.id: hit for hit in dense}
@@ -151,6 +163,9 @@ class HybridRetriever:
                     metadata=dict(getattr(chunk, "metadata", {}) or {}),
                 )
             )
+
+        if self._reranker is not None:
+            return rerank_chunks(self._reranker, query, results, top_k=k)
         return results
 
     def _passes_prefilter(self, chunk_id: str, prefilter: RetrievalFilter) -> bool:

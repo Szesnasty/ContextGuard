@@ -30,15 +30,25 @@ from contextguard.retrieval.embeddings import (
 from contextguard.retrieval.hybrid import reciprocal_rank_fusion
 from contextguard.retrieval.policy_filter import RetrievalFilter, build_retrieval_filter
 from contextguard.retrieval.prompt import build_prompt, citation_map
+from contextguard.retrieval.rerank import (
+    CrossEncoderReranker,
+    NoOpReranker,
+    Reranker,
+    get_reranker,
+    rerank_chunks,
+)
 
 __all__ = [
     "BM25Index",
     "Chunker",
     "CloudEmbedder",
+    "CrossEncoderReranker",
     "Embedder",
     "FixedSizeChunker",
     "KeywordSearcher",
+    "NoOpReranker",
     "OllamaEmbedder",
+    "Reranker",
     "RetrievalFilter",
     "SourceDocument",
     "Vector",
@@ -47,5 +57,7 @@ __all__ = [
     "chunk_corpus",
     "citation_map",
     "get_embedder",
+    "get_reranker",
     "reciprocal_rank_fusion",
+    "rerank_chunks",
 ]

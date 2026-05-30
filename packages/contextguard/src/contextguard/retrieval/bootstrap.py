@@ -11,16 +11,22 @@ from __future__ import annotations
 
 from contextguard.retrieval.bm25 import BM25Index
 from contextguard.retrieval.embeddings import Embedder, get_embedder
+from contextguard.retrieval.rerank import get_reranker
 from contextguard.retrieval.retriever import HybridRetriever
 from contextguard.retrieval.store import all_chunks, get_engine
 
 
 def build_retriever(*, embedder: Embedder | None = None) -> HybridRetriever:
-    """Build a retriever over the seeded store (engine + embedder from env)."""
+    """Build a retriever over the seeded store (engine + embedder from env).
+
+    The reranker is selected from ``RERANKER`` (``none`` by default, ADR-016);
+    when configured it narrows the hybrid candidate pool to the final top-k
+    before policy + redaction.
+    """
     engine = get_engine()
     resolved = embedder or get_embedder()
     index = BM25Index(all_chunks(engine))
-    return HybridRetriever(engine, resolved, index)
+    return HybridRetriever(engine, resolved, index, reranker=get_reranker())
 
 
 __all__ = ["build_retriever"]
