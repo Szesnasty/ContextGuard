@@ -30,6 +30,7 @@ dev = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "structlog>=24",
+    "pyjwt>=2.8",
     # Baseline RAG (Tier A) deps for integration tests; end users get these via
     # `local core install[pgvector,embeddings]` (ADR-008/ADR-010).
     "sqlalchemy>=2",

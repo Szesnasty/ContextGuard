@@ -13,8 +13,9 @@ from __future__ import annotations
 import socket
 
 import pytest
+from contextguard.auth import issue_token
 from contextguard_contracts.enums import Classification
-from contextguard_contracts.models import Chunk
+from contextguard_contracts.models import Chunk, UserContext
 from fastapi.testclient import TestClient
 
 pytestmark = pytest.mark.integration
@@ -53,7 +54,7 @@ _CHUNKS = [
     ),
 ]
 
-_USER = {"sub": "u1", "tenant": "acme", "role": "exec", "purpose": "review"}
+_USER = UserContext(sub="u1", tenant="acme", role="exec", purpose="review")
 
 
 @pytest.fixture
@@ -85,7 +86,8 @@ def live_client():
 def test_query_end_to_end_grounded_answer(live_client: TestClient) -> None:
     resp = live_client.post(
         "/v1/query",
-        json={"query": "What is the launch code for Project Falcon?", "user": _USER, "k": 3},
+        json={"query": "What is the launch code for Project Falcon?", "k": 3},
+        headers={"Authorization": f"Bearer {issue_token(_USER)}"},
     )
     assert resp.status_code == 200
     body = resp.json()

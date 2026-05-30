@@ -153,12 +153,15 @@ class RetrievedChunk(BaseModel):
 
 
 class QueryRequest(BaseModel):
-    """A RAG query: who is asking, what they ask, how many chunks to retrieve."""
+    """A RAG query: what is asked and how many chunks to retrieve.
+
+    Identity is NOT carried here - it is derived from the verified Bearer token
+    at the HTTP boundary (ADR-015), never asserted by the client body.
+    """
 
     model_config = _STRICT
 
     query: str = Field(min_length=1)
-    user: UserContext
     k: int = Field(default=5, ge=1, le=50)
 
 

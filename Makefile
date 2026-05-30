@@ -3,7 +3,7 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down down-v seed run test test-int e2e lint types fmt demo layout schemas leak-demo benchmark
+.PHONY: help install lock verify-lock up down down-v seed token run test test-int e2e lint types fmt demo layout schemas leak-demo benchmark
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
@@ -39,6 +39,9 @@ down-v: ## DESTRUCTIVE: stop the stack AND delete all volumes (data loss!)
 
 seed: ## Enqueue + drain ingestion of the seed corpus (needs `make up`)
 	$(UV_RUN) python scripts/seed.py
+
+token: ## Mint a demo identity token, e.g. `make token SUB=sales@acme`
+	@$(UV_RUN) python scripts/issue_token.py $(SUB)
 
 run: ## Run the API locally (uvicorn, reload)
 	$(UV_RUN) uvicorn contextguard.api.app:create_app --factory --reload --port 8000

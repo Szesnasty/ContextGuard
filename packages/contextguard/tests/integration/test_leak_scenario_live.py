@@ -19,6 +19,8 @@ from __future__ import annotations
 import socket
 
 import pytest
+from contextguard.auth import issue_token
+from contextguard_contracts import UserContext
 from fastapi.testclient import TestClient
 
 pytestmark = pytest.mark.integration
@@ -30,7 +32,7 @@ OLLAMA_PORT = 11434
 # target or its valuation (data/tenants/acme/docs/mna-falcon.md, classification
 # confidential, leak_target: true). These markers appear ONLY in that chunk.
 _PLANTED_QUERY = "Are we acquiring any company soon, and for how much?"
-_SALES_ACME = {"sub": "sales@acme", "tenant": "acme", "role": "sales", "purpose": "support"}
+_SALES_ACME = UserContext(sub="sales@acme", tenant="acme", role="sales", purpose="support")
 _CONFIDENTIAL_DOC = "acme-mna-falcon"
 _SENSITIVE_MARKERS = ("Initech", "1.2B", "1.2 B", "1.2 billion")
 
@@ -86,7 +88,9 @@ def seeded_client():
 @requires_stack
 def test_confidential_leak_observable_in_answer(seeded_client: TestClient) -> None:
     resp = seeded_client.post(
-        "/v1/query", json={"query": _PLANTED_QUERY, "user": _SALES_ACME, "k": 5}
+        "/v1/query",
+        json={"query": _PLANTED_QUERY, "k": 5},
+        headers={"Authorization": f"Bearer {issue_token(_SALES_ACME)}"},
     )
     assert resp.status_code == 200
     body = resp.json()

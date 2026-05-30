@@ -1,46 +1,6 @@
 {
-  "$defs": {
-    "UserContext": {
-      "additionalProperties": false,
-      "description": "Who is asking, and under what authority \u2014 the input to policy.",
-      "properties": {
-        "labels": {
-          "default": [],
-          "items": {
-            "type": "string"
-          },
-          "title": "Labels",
-          "type": "array"
-        },
-        "purpose": {
-          "title": "Purpose",
-          "type": "string"
-        },
-        "role": {
-          "title": "Role",
-          "type": "string"
-        },
-        "sub": {
-          "title": "Sub",
-          "type": "string"
-        },
-        "tenant": {
-          "title": "Tenant",
-          "type": "string"
-        }
-      },
-      "required": [
-        "sub",
-        "tenant",
-        "role",
-        "purpose"
-      ],
-      "title": "UserContext",
-      "type": "object"
-    }
-  },
   "additionalProperties": false,
-  "description": "A RAG query: who is asking, what they ask, how many chunks to retrieve.",
+  "description": "A RAG query: what is asked and how many chunks to retrieve.\n\nIdentity is NOT carried here - it is derived from the verified Bearer token\nat the HTTP boundary (ADR-015), never asserted by the client body.",
   "properties": {
     "k": {
       "default": 5,
@@ -53,14 +13,10 @@
       "minLength": 1,
       "title": "Query",
       "type": "string"
-    },
-    "user": {
-      "$ref": "#/$defs/UserContext"
     }
   },
   "required": [
-    "query",
-    "user"
+    "query"
   ],
   "title": "QueryRequest",
   "type": "object"

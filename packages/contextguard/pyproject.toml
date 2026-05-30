@@ -20,6 +20,7 @@ api = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "structlog>=24",
+    "pyjwt>=2.8",
 ]
 # Baseline RAG store (Tier A, ADR-008). pgvector-backed vector store + migrations.
 pgvector = [

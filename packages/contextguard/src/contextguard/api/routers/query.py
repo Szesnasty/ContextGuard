@@ -19,9 +19,11 @@ from contextguard_contracts import (
     QueryRequest,
     QueryResponse,
     RetrievedChunk,
+    UserContext,
 )
 from fastapi import APIRouter, Depends, HTTPException
 
+from contextguard.api.auth import get_current_user
 from contextguard.api.deps import get_context_guard, get_llm_gateway, get_retriever
 from contextguard.retrieval.prompt import build_prompt
 
@@ -62,13 +64,14 @@ def _to_retrieved(hit: Any) -> RetrievedChunk:
 @router.post("/v1/query", response_model=QueryResponse)
 def query(
     request: QueryRequest,
+    user: UserContext = Depends(get_current_user),
     retriever: Any = Depends(get_retriever),
     guard: ContextGuard = Depends(get_context_guard),
     gateway: LLMGateway = Depends(get_llm_gateway),
 ) -> QueryResponse:
     """Retrieve, guard, build a cited prompt, and return a grounded answer."""
     trace_id = uuid.uuid4().hex
-    log = logger.bind(trace_id=trace_id, tenant=request.user.tenant, sub=request.user.sub)
+    log = logger.bind(trace_id=trace_id, tenant=user.tenant, sub=user.sub)
     log.info("query.received", k=request.k)
 
     try:
@@ -80,7 +83,7 @@ def query(
             detail={"error": "retrieval unavailable", "trace_id": trace_id},
         ) from exc
 
-    guarded = guard.guard(request.user, request.query, [_to_chunk(h) for h in hits])
+    guarded = guard.guard(user, request.query, [_to_chunk(h) for h in hits])
     messages = build_prompt(request.query, guarded.allowed_chunks)
 
     try:

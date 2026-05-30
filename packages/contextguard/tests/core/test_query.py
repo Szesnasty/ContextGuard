@@ -86,16 +86,23 @@ def _const(value: Any) -> Any:
     return lambda: value
 
 
-_VALID_USER = {"sub": "u1", "tenant": "acme", "role": "sales", "purpose": "support"}
+_VALID_USER = UserContext(sub="u1", tenant="acme", role="sales", purpose="support")
+
+
+def _auth(user: UserContext = _VALID_USER) -> dict[str, str]:
+    """Authorization header carrying a signed token for ``user`` (ADR-015)."""
+    from contextguard.auth import issue_token
+
+    return {"Authorization": f"Bearer {issue_token(user)}"}
 
 
 def _request(query: str = "What is the launch code?", k: int = 5) -> dict[str, Any]:
-    return {"query": query, "user": _VALID_USER, "k": k}
+    return {"query": query, "k": k}
 
 
 def test_query_happy_path(client: TestClient) -> None:
     _override(client)
-    resp = client.post("/v1/query", json=_request())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
     assert resp.status_code == 200
     body = resp.json()
     assert body["answer"] == "Grounded answer [1]."
@@ -106,7 +113,7 @@ def test_query_happy_path(client: TestClient) -> None:
 
 def test_query_response_validates_against_contract(client: TestClient) -> None:
     _override(client)
-    resp = client.post("/v1/query", json=_request())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
     assert resp.status_code == 200
     parsed = QueryResponse.model_validate(resp.json())
     assert parsed.retrieved_chunks[0].id == "c1"
@@ -116,7 +123,7 @@ def test_query_response_validates_against_contract(client: TestClient) -> None:
 def test_query_calls_guard(client: TestClient) -> None:
     spy = _SpyGuard()
     _override(client, guard=spy)
-    resp = client.post("/v1/query", json=_request())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
     assert resp.status_code == 200
     assert len(spy.calls) == 1
 
@@ -124,7 +131,7 @@ def test_query_calls_guard(client: TestClient) -> None:
 def test_query_user_context_parsed_and_attached(client: TestClient) -> None:
     spy = _SpyGuard()
     _override(client, guard=spy)
-    client.post("/v1/query", json=_request())
+    client.post("/v1/query", json=_request(), headers=_auth())
     user, query, n_chunks = spy.calls[0]
     assert isinstance(user, UserContext)
     assert user.sub == "u1"
@@ -137,7 +144,7 @@ def test_query_user_context_parsed_and_attached(client: TestClient) -> None:
 def test_query_retrieves_only_k(client: TestClient) -> None:
     retriever = _FakeRetriever()
     _override(client, retriever=retriever)
-    client.post("/v1/query", json=_request(k=1))
+    client.post("/v1/query", json=_request(k=1), headers=_auth())
     assert retriever.calls == [("What is the launch code?", 1)]
 
 
@@ -149,7 +156,7 @@ def test_query_model_failure_returns_clean_5xx(client: TestClient) -> None:
             raise RuntimeError("ollama exploded: secret-token-xyz")
 
     _override(client, gateway=_BoomGateway())
-    resp = client.post("/v1/query", json=_request())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
     assert resp.status_code == 502
     detail = resp.json()["detail"]
     assert detail["trace_id"]
@@ -164,7 +171,7 @@ def test_query_retrieval_failure_returns_clean_5xx(client: TestClient) -> None:
             raise RuntimeError("db down")
 
     _override(client, retriever=_BoomRetriever())
-    resp = client.post("/v1/query", json=_request())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
     assert resp.status_code == 503
     assert resp.json()["detail"]["trace_id"]
     assert "Traceback" not in resp.text
@@ -172,14 +179,29 @@ def test_query_retrieval_failure_returns_clean_5xx(client: TestClient) -> None:
 
 def test_query_empty_query_rejected(client: TestClient) -> None:
     _override(client)
-    resp = client.post("/v1/query", json=_request(query=""))
+    resp = client.post("/v1/query", json=_request(query=""), headers=_auth())
     assert resp.status_code == 422
 
 
-def test_query_missing_user_rejected(client: TestClient) -> None:
+def test_query_without_token_rejected(client: TestClient) -> None:
     _override(client)
-    resp = client.post("/v1/query", json={"query": "hi"})
-    assert resp.status_code == 422
+    resp = client.post("/v1/query", json=_request())
+    assert resp.status_code in (401, 403)  # no Authorization header
+
+
+def test_query_invalid_token_rejected(client: TestClient) -> None:
+    _override(client)
+    resp = client.post("/v1/query", json=_request(), headers={"Authorization": "Bearer not-a-jwt"})
+    assert resp.status_code == 401
+    # Identity can no longer be asserted via the request body.
+    resp_body = client.post(
+        "/v1/query",
+        json={
+            "query": "hi",
+            "user": {"sub": "x", "tenant": "acme", "role": "admin", "purpose": "dev"},
+        },
+    )
+    assert resp_body.status_code in (401, 403)
 
 
 def test_query_types_present_in_openapi(client: TestClient) -> None:
