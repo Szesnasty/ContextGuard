@@ -36,6 +36,11 @@ embeddings = [
 llm = [
     "httpx>=0.27",
 ]
+# Background ingestion via RQ + Redis (Tier A). `local core install[ingest]`.
+ingest = [
+    "rq>=1.16",
+    "redis>=5",
+]
 # Optional cloud embedder/LLM upgrade (OpenAI). `local core install[openai]`.
 openai = [
     "openai>=1.30",

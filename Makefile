@@ -37,8 +37,8 @@ down: ## Stop the local stack (keeps volumes/data)
 down-v: ## DESTRUCTIVE: stop the stack AND delete all volumes (data loss!)
 	docker compose down -v
 
-seed: ## Load tenant + policy fixtures
-	@echo "seed: not implemented in phase 0"
+seed: ## Enqueue + drain ingestion of the seed corpus (needs `make up`)
+	$(UV_RUN) python scripts/seed.py
 
 run: ## Run the API locally (uvicorn, reload)
 	$(UV_RUN) uvicorn contextguard.api.app:create_app --factory --reload --port 8000
