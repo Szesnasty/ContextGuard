@@ -16,12 +16,13 @@ from dataclasses import dataclass
 from typing import cast
 
 from contextguard_contracts.models import Chunk
-from sqlalchemy import Engine, Table, create_engine, select
+from sqlalchemy import Engine, Table, create_engine, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from contextguard.db.models import Base, ChunkRow
 from contextguard.retrieval.embeddings import Embedder, Vector
+from contextguard.risk import risk_score
 
 _DEFAULT_DSN = "postgresql+psycopg://contextguard:contextguard@localhost:5432/contextguard"
 
@@ -58,7 +59,14 @@ def create_schema(engine: Engine) -> None:
 
 
 def upsert_chunks(engine: Engine, chunks: Sequence[Chunk], embedder: Embedder) -> int:
-    """Embed and upsert chunks idempotently. Returns the number of rows written."""
+    """Embed and upsert chunks idempotently. Returns the number of rows written.
+
+    The chunk's enrichment (``pii_spans``/``secret_spans``/``risk_signals``) is
+    persisted as queryable scalars (``pii_count``/``secret_count``/``risk_score``)
+    so the phase-4 policy layer can push tenant/classification/risk predicates
+    into SQL instead of re-deriving them per request (ADR-005). Chunks the
+    ingestion worker has not enriched simply persist zeros, never ``NULL``.
+    """
     if not chunks:
         return 0
     vectors = embedder.embed([chunk.text for chunk in chunks])
@@ -71,6 +79,9 @@ def upsert_chunks(engine: Engine, chunks: Sequence[Chunk], embedder: Embedder) -
             "text": chunk.text,
             "embedding": vector,
             "metadata": dict(chunk.metadata),
+            "pii_count": len(chunk.pii_spans),
+            "secret_count": len(chunk.secret_spans),
+            "risk_score": risk_score(chunk.risk_signals),
         }
         for chunk, vector in zip(chunks, vectors, strict=True)
     ]
@@ -88,6 +99,9 @@ def upsert_chunks(engine: Engine, chunks: Sequence[Chunk], embedder: Embedder) -
             "text": stmt.excluded.text,
             "embedding": stmt.excluded.embedding,
             "metadata": stmt.excluded.metadata,
+            "pii_count": stmt.excluded.pii_count,
+            "secret_count": stmt.excluded.secret_count,
+            "risk_score": stmt.excluded.risk_score,
         },
     )
     with Session(engine) as session:
@@ -152,4 +166,61 @@ def all_chunks(engine: Engine) -> list[Chunk]:
     ]
 
 
-__all__ = ["Neighbour", "all_chunks", "create_schema", "get_engine", "knn", "upsert_chunks"]
+def classification_distribution(engine: Engine) -> dict[str, int]:
+    """Count stored chunks grouped by classification (SQL ``GROUP BY``).
+
+    Verifies ingestion landed the expected sensitivity distribution (phase-3
+    DoD) and is the kind of query the dashboard surfaces later.
+    """
+    stmt = (
+        select(ChunkRow.classification, func.count())
+        .group_by(ChunkRow.classification)
+        .order_by(ChunkRow.classification)
+    )
+    with Session(engine) as session:
+        return {classification: int(count) for classification, count in session.execute(stmt)}
+
+
+@dataclass(frozen=True)
+class EnrichmentSummary:
+    """Aggregate enrichment counters across the whole store (observability)."""
+
+    chunks: int
+    chunks_with_pii: int
+    chunks_with_secrets: int
+    max_risk_score: float
+
+
+def enrichment_summary(engine: Engine) -> EnrichmentSummary:
+    """Aggregate enrichment scalars so ingestion results are queryable in SQL.
+
+    Proves the re-index landed enrichment alongside the vector (phase-3 DoD):
+    every persisted row carries ``pii_count``/``secret_count``/``risk_score``.
+    """
+    stmt = select(
+        func.count(),
+        func.count().filter(ChunkRow.pii_count > 0),
+        func.count().filter(ChunkRow.secret_count > 0),
+        func.coalesce(func.max(ChunkRow.risk_score), 0.0),
+    )
+    with Session(engine) as session:
+        total, with_pii, with_secrets, max_risk = session.execute(stmt).one()
+    return EnrichmentSummary(
+        chunks=int(total),
+        chunks_with_pii=int(with_pii),
+        chunks_with_secrets=int(with_secrets),
+        max_risk_score=float(max_risk),
+    )
+
+
+__all__ = [
+    "EnrichmentSummary",
+    "Neighbour",
+    "all_chunks",
+    "classification_distribution",
+    "create_schema",
+    "enrichment_summary",
+    "get_engine",
+    "knn",
+    "upsert_chunks",
+]

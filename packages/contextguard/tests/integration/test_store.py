@@ -132,3 +132,62 @@ def test_knn_metadata_inherited(engine, embedder) -> None:
     hit = knn(engine, embedder.embed(["confidential acme memo"])[0], k=1)[0]
     assert hit.tenant == "acme"
     assert hit.classification == str(Classification.INTERNAL)
+
+
+@requires_stack
+def test_enrichment_scalars_persisted(engine, embedder) -> None:
+    """The ingestion worker's enrichment lands as queryable SQL columns (B2.1)."""
+    from contextguard.retrieval.store import upsert_chunks
+    from contextguard.risk import enrich
+    from sqlalchemy import text
+
+    pii_chunk = enrich(_chunk("c1", "contact jane.doe@example.com for details"))
+    clean_chunk = enrich(_chunk("c2", "the quarterly report is ready"))
+    written = upsert_chunks(engine, [pii_chunk, clean_chunk], embedder)
+    assert written == 2
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text("SELECT pii_count, secret_count, risk_score FROM chunks WHERE id = 'c1'")
+        ).one()
+    pii_count, secret_count, risk = row
+    # The PII chunk carries a detected email; nothing is NULL.
+    assert pii_count >= 1
+    assert secret_count == 0
+    assert risk is not None
+
+
+@requires_stack
+def test_classification_distribution(engine, embedder) -> None:
+    from contextguard.retrieval.store import classification_distribution, upsert_chunks
+
+    chunks = [
+        _chunk("pub", "public notice"),
+        Chunk(
+            id="conf",
+            doc_id="doc-2",
+            tenant="acme",
+            text="confidential acquisition memo",
+            classification=Classification.CONFIDENTIAL,
+        ),
+    ]
+    upsert_chunks(engine, chunks, embedder)
+    dist = classification_distribution(engine)
+    assert dist.get(str(Classification.INTERNAL)) == 1
+    assert dist.get(str(Classification.CONFIDENTIAL)) == 1
+
+
+@requires_stack
+def test_enrichment_summary(engine, embedder) -> None:
+    from contextguard.retrieval.store import enrichment_summary, upsert_chunks
+    from contextguard.risk import enrich
+
+    chunks = [
+        enrich(_chunk("c1", "contact jane.doe@example.com about the invoice")),
+        enrich(_chunk("c2", "the weather is sunny today")),
+    ]
+    upsert_chunks(engine, chunks, embedder)
+    summary = enrichment_summary(engine)
+    assert summary.chunks == 2
+    assert summary.chunks_with_pii >= 1
+    assert summary.max_risk_score >= 0.0
