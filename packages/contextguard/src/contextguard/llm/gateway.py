@@ -27,6 +27,18 @@ Message = dict[str, str]
 _DEFAULT_OLLAMA_MODEL = "qwen2.5:7b"
 _DEFAULT_OLLAMA_URL = "http://localhost:11434"
 _DEFAULT_OPENAI_MODEL = "gpt-4o-mini"
+_DEFAULT_OLLAMA_TIMEOUT = 120.0
+
+
+def _read_timeout() -> float:
+    """Ollama request timeout in seconds, overridable via ``OLLAMA_TIMEOUT``."""
+    raw = os.getenv("OLLAMA_TIMEOUT")
+    if not raw:
+        return _DEFAULT_OLLAMA_TIMEOUT
+    try:
+        return float(raw)
+    except ValueError:
+        return _DEFAULT_OLLAMA_TIMEOUT
 
 
 @dataclass(frozen=True)
@@ -57,13 +69,15 @@ class OllamaGateway:
         *,
         model: str | None = None,
         base_url: str | None = None,
-        timeout: float = 120.0,
+        timeout: float | None = None,
     ) -> None:
         self._model = model or os.getenv("OLLAMA_CHAT_MODEL") or _DEFAULT_OLLAMA_MODEL
         self._base_url = (base_url or os.getenv("OLLAMA_BASE_URL") or _DEFAULT_OLLAMA_URL).rstrip(
             "/"
         )
-        self._timeout = timeout
+        # CPU-served 7B models can take minutes on long contexts; the timeout is an
+        # env knob (OLLAMA_TIMEOUT, seconds) so slow hosts can tune it without code.
+        self._timeout = timeout if timeout is not None else _read_timeout()
 
     @property
     def model(self) -> str:
