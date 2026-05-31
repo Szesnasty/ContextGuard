@@ -30,10 +30,30 @@ logger = structlog.get_logger(__name__)
 _DEFAULT_POLICY_PATH = Path("data/policies/example.yaml")
 
 
+def _policy_guard(*, log_event: str) -> ContextGuard:
+    """Build a policy-enforcing guard from ``POLICY_PATH`` (or the repo example).
+
+    With no policy file available it degrades to a pass-through guard and logs a
+    warning - a guard with no policy is useless but not dangerous (fail-open is
+    explicit and observable, never silent).
+    """
+    raw = os.environ.get("POLICY_PATH")
+    path = Path(raw) if raw else _DEFAULT_POLICY_PATH
+    if not path.is_file():
+        logger.warning(log_event, path=str(path))
+        return ContextGuard()
+    return ContextGuard.from_policy(path)
+
+
 @lru_cache
 def get_context_guard() -> ContextGuard:
-    """The guard on the request path. Pass-through until phase 4 adds a policy."""
-    return ContextGuard()
+    """The guard on the ``/v1/query`` request path (phase 4 enforcement).
+
+    Enforces the policy so the answer is grounded **only** in chunks that survive
+    the firewall - blocked chunks never reach ``build_prompt`` and so can't leak
+    into the model's reply. Built once and cached.
+    """
+    return _policy_guard(log_event="context_guard.no_policy")
 
 
 @lru_cache
@@ -41,16 +61,9 @@ def get_scan_guard() -> ContextGuard:
     """The policy-enforcing guard behind ``/v1/guard`` (scan-only, B3.3).
 
     Loads the policy from ``POLICY_PATH``; if unset, falls back to the repo's
-    example policy when present. With no policy available it degrades to a
-    pass-through guard and logs a warning - a scan with no policy is useless but
-    not dangerous. Built once and cached.
+    example policy when present. Built once and cached.
     """
-    raw = os.environ.get("POLICY_PATH")
-    path = Path(raw) if raw else _DEFAULT_POLICY_PATH
-    if not path.is_file():
-        logger.warning("scan_guard.no_policy", path=str(path))
-        return ContextGuard()
-    return ContextGuard.from_policy(path)
+    return _policy_guard(log_event="scan_guard.no_policy")
 
 
 @lru_cache

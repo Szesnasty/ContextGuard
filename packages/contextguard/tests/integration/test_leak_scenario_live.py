@@ -1,12 +1,13 @@
-"""Live leak scenario: the leak observable in the model's answer (B1.7).
+"""Live leak scenario: the firewall blocks the leak in the model's answer (B1.7).
 
 The headline deliverable's **live-model half** (Tier A). The in-memory before/after
 is already proven zero-infra in `tests/core/test_leak_demo.py` (Milestone A5);
 here the *same* planted leak is reproduced end-to-end over the real RAG: seed the
 real tenant corpus into pgvector, run `/v1/query` as the planted identity, and
-assert the confidential chunk both reaches the context (`guarded_context`) **and**
-surfaces in the live model's answer. With `guard()` still pass-through (phase 2),
-this test is green *because* the leak happens - phase 4 inverts it.
+assert the confidential chunk is **blocked** by the policy guard so it neither
+reaches the context (`guarded_context.allowed_chunks`) **nor** surfaces in the
+live model's answer. Phase 4 wired the policy into the request path, so the guard
+now enforces `sales-no-confidential` - the leak is contained, not observed.
 
 Opt-in: requires the compose stack (`make up`) with the embedding + chat models
 pulled. SKIPS when the stack is down so `make test` stays green offline (ADR-010).
@@ -86,7 +87,7 @@ def seeded_client():
 
 
 @requires_stack
-def test_confidential_leak_observable_in_answer(seeded_client: TestClient) -> None:
+def test_confidential_leak_blocked_in_answer(seeded_client: TestClient) -> None:
     resp = seeded_client.post(
         "/v1/query",
         json={"query": _PLANTED_QUERY, "k": 5},
@@ -95,16 +96,16 @@ def test_confidential_leak_observable_in_answer(seeded_client: TestClient) -> No
     assert resp.status_code == 200
     body = resp.json()
 
-    # 1) The confidential M&A chunk was retrieved and (pass-through guard) reaches
-    #    the context - the leak exists at the retrieval/context layer.
+    # 1) The confidential M&A chunk may still be *retrieved*, but the policy guard
+    #    (sales-no-confidential) blocks it, so it never reaches the context.
     allowed = body["guarded_context"]["allowed_chunks"]
-    assert any(c["doc_id"] == _CONFIDENTIAL_DOC for c in allowed), (
-        "the confidential acquisition memo should reach the context in baseline"
+    assert not any(c["doc_id"] == _CONFIDENTIAL_DOC for c in allowed), (
+        "the confidential acquisition memo must be blocked from the context for sales"
     )
 
-    # 2) The leak is *observable*: the live model repeats confidential content
-    #    (the acquisition target / valuation) in its answer, not just internally.
+    # 2) The leak is *contained*: with the chunk absent from the prompt, the live
+    #    model cannot repeat the acquisition target / valuation in its answer.
     answer = body["answer"]
-    assert any(marker in answer for marker in _SENSITIVE_MARKERS), (
-        f"expected confidential content {_SENSITIVE_MARKERS} in answer, got: {answer!r}"
+    assert not any(marker in answer for marker in _SENSITIVE_MARKERS), (
+        f"confidential content {_SENSITIVE_MARKERS} leaked into answer: {answer!r}"
     )
