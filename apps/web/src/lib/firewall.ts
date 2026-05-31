@@ -1,0 +1,191 @@
+// Pure helpers for interpreting a GuardedContext. Kept framework-free so they
+// are unit-tested directly (Vitest) without mounting a component.
+import type { Chunk, ChunkDecision, GuardedContext, Outcome, RetrievedChunk } from "@/api/types";
+
+export interface DecisionTally {
+  allowed: number;
+  blocked: number;
+  redacted: number;
+}
+
+export function tally(guarded: GuardedContext): DecisionTally {
+  const t: DecisionTally = { allowed: 0, blocked: 0, redacted: 0 };
+  for (const d of guarded.decisions ?? []) {
+    if (d.outcome === "allowed") t.allowed += 1;
+    else if (d.outcome === "blocked") t.blocked += 1;
+    else if (d.outcome === "redacted") t.redacted += 1;
+  }
+  return t;
+}
+
+export function outcomeClass(outcome: Outcome): string {
+  switch (outcome) {
+    case "allowed":
+      return "tag tag--allowed";
+    case "blocked":
+      return "tag tag--blocked";
+    case "redacted":
+      return "tag tag--redacted";
+    default:
+      return "tag";
+  }
+}
+
+/** Decisions that removed or masked a chunk (the firewall's "work"). */
+export function enforced(guarded: GuardedContext): ChunkDecision[] {
+  return (guarded.decisions ?? []).filter((d) => d.outcome !== "allowed");
+}
+
+/** Was anything kept out of the prompt? Drives the leak / no-leak headline. */
+export function isContained(guarded: GuardedContext): boolean {
+  return enforced(guarded).length > 0;
+}
+
+export function tokenReduction(guarded: GuardedContext): number {
+  const before = guarded.tokens_before || 0;
+  if (before === 0) return 0;
+  const after = guarded.tokens_after || 0;
+  return Math.max(0, Math.round(((before - after) / before) * 100));
+}
+
+/** The pre-firewall context: every retrieved chunk's text, in order. */
+export function contextBefore(retrieved: RetrievedChunk[]): string {
+  return retrieved.map((c) => `# ${c.id} (${c.classification})\n${c.text}`).join("\n\n");
+}
+
+/** The post-firewall context: only what survived, in order. */
+export function contextAfter(guarded: GuardedContext): string {
+  return (guarded.allowed_chunks ?? [])
+    .map((c) => `# ${c.id} (${c.classification})\n${c.text}`)
+    .join("\n\n");
+}
+
+/** A Mermaid flowchart of the firewall path: retrieved -> verdicts -> prompt. */
+export function evidenceFlow(retrievedCount: number, guarded: GuardedContext): string {
+  const t = tally(guarded);
+  const lines = [
+    "flowchart LR",
+    `  R["Retrieved<br/>${retrievedCount}"]`,
+    `  A["Allowed<br/>${t.allowed}"]`,
+    `  B["Blocked<br/>${t.blocked}"]`,
+    `  D["Redacted<br/>${t.redacted}"]`,
+    `  P["Prompt<br/>${guarded.tokens_after ?? 0} tok"]`,
+    "  R --> A",
+    "  R --> B",
+    "  R --> D",
+    "  A --> P",
+    "  D --> P",
+    "  classDef ok fill:#d6f5dd,stroke:#3fb950,color:#1a1a1a;",
+    "  classDef bad fill:#fbdcda,stroke:#f85149,color:#1a1a1a;",
+    "  classDef warn fill:#fbecc8,stroke:#d29922,color:#1a1a1a;",
+    "  class A,P ok;",
+    "  class B bad;",
+    "  class D warn;",
+  ];
+  return lines.join("\n");
+}
+
+// --- Provenance / grounding ------------------------------------------------
+// The drawer answers two operator questions: "where did the answer's knowledge
+// come from?" (source documents + relevance) and "which document is allowed
+// where?" (the firewall outcome per chunk, for *this* identity).
+
+/** A retrieved chunk enriched with its firewall verdict and prompt membership. */
+export interface EnrichedChunk {
+  id: string;
+  docId: string;
+  tenant: string;
+  classification: string;
+  text: string;
+  score: number;
+  outcome: Outcome;
+  reasons: string[];
+  policies: string[];
+  /** True if the (possibly masked) chunk actually reached the model prompt. */
+  inPrompt: boolean;
+}
+
+/** A source document and every chunk it contributed to this query. */
+export interface DocumentGroup {
+  docId: string;
+  tenant: string;
+  classification: string;
+  /** Best (max) retrieval score across the document's chunks. */
+  bestScore: number;
+  chunks: EnrichedChunk[];
+  /** Whether any chunk from this document reached the prompt. */
+  anyInPrompt: boolean;
+  /** Whether the firewall blocked or redacted any chunk from this document. */
+  anyWithheld: boolean;
+}
+
+function decisionMap(guarded: GuardedContext): Map<string, ChunkDecision> {
+  const m = new Map<string, ChunkDecision>();
+  for (const d of guarded.decisions ?? []) m.set(d.chunk_id, d);
+  return m;
+}
+
+/** Join retrieval hits with the firewall's per-chunk verdict. */
+export function enrich(retrieved: RetrievedChunk[], guarded: GuardedContext): EnrichedChunk[] {
+  const decisions = decisionMap(guarded);
+  const allowedIds = new Set((guarded.allowed_chunks ?? []).map((c: Chunk) => c.id));
+  return retrieved.map((hit) => {
+    const d = decisions.get(hit.id);
+    const outcome = d?.outcome ?? "allowed";
+    return {
+      id: hit.id,
+      docId: hit.doc_id,
+      tenant: hit.tenant,
+      classification: hit.classification,
+      text: hit.text,
+      score: hit.score,
+      outcome,
+      reasons: d?.reasons ?? [],
+      policies: d?.policies_triggered ?? [],
+      inPrompt: allowedIds.has(hit.id) || outcome === "allowed" || outcome === "redacted",
+    };
+  });
+}
+
+/** Group enriched chunks by their source document, best-score first. */
+export function groupByDocument(chunks: EnrichedChunk[]): DocumentGroup[] {
+  const groups = new Map<string, DocumentGroup>();
+  for (const c of chunks) {
+    let g = groups.get(c.docId);
+    if (!g) {
+      g = {
+        docId: c.docId,
+        tenant: c.tenant,
+        classification: c.classification,
+        bestScore: c.score,
+        chunks: [],
+        anyInPrompt: false,
+        anyWithheld: false,
+      };
+      groups.set(c.docId, g);
+    }
+    g.chunks.push(c);
+    g.bestScore = Math.max(g.bestScore, c.score);
+    g.anyInPrompt = g.anyInPrompt || c.inPrompt;
+    g.anyWithheld = g.anyWithheld || c.outcome !== "allowed";
+  }
+  for (const g of groups.values()) {
+    g.chunks.sort((a, b) => b.score - a.score);
+  }
+  return [...groups.values()].sort((a, b) => b.bestScore - a.bestScore);
+}
+
+export function classificationClass(classification: string): string {
+  switch (classification) {
+    case "public":
+      return "tag tag--allowed";
+    case "internal":
+      return "tag tag--redacted";
+    case "confidential":
+    case "restricted":
+    case "secret":
+      return "tag tag--blocked";
+    default:
+      return "tag";
+  }
+}
