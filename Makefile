@@ -3,7 +3,7 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down down-v seed token run test test-int e2e lint types fmt demo layout schemas leak-demo benchmark
+.PHONY: help install lock verify-lock up down down-v seed token run test test-int e2e lint types fmt demo layout schemas leak-demo benchmark red-team
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
@@ -76,6 +76,9 @@ leak-demo: ## Print the before/after leak report (zero-infra, Public v0.1)
 
 benchmark: ## Regenerate BENCHMARK.md from the Public v0.1 scenarios (zero-infra)
 	$(UV_RUN) python scripts/benchmark.py
+
+red-team: ## Run the red-team corpus through the firewall and regenerate RED-TEAM.md (zero-infra)
+	$(UV_RUN) python scripts/red_team.py
 
 layout: ## Assert the monorepo layout matches ADR-003
 	python3 scripts/check_layout.py
