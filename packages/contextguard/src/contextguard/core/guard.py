@@ -23,7 +23,7 @@ import yaml
 from contextguard_policy_dsl import Policy, PolicyEngine
 
 from contextguard.core.enrichment_stage import EnrichmentStage
-from contextguard.core.evidence_jsonl import JsonlEvidenceSink
+from contextguard.core.evidence_jsonl import EvidenceSink, JsonlEvidenceSink
 from contextguard.core.pipeline import Pipeline, PipelineContext
 from contextguard.core.policy_stage import PolicyStage
 from contextguard.core.redaction_stage import RedactionStage
@@ -50,6 +50,7 @@ class ContextGuard:
         counter: TokenCounter | None = None,
         token_budget: int | None = None,
         pipeline: Pipeline | None = None,
+        sink: EvidenceSink | None = None,
     ) -> None:
         self.policy = policy
         self._counter = counter
@@ -63,7 +64,10 @@ class ContextGuard:
             )
         else:
             self._pipeline = Pipeline()
-        self._sink = JsonlEvidenceSink(evidence_path)
+        # Default sink is the zero-infra JSONL/in-memory one (ADR-010). A Tier-A
+        # caller can inject a durable sink (e.g. PostgresEvidenceSink) that the
+        # core never imports.
+        self._sink: EvidenceSink = sink if sink is not None else JsonlEvidenceSink(evidence_path)
 
     @classmethod
     def from_policy(
@@ -72,6 +76,7 @@ class ContextGuard:
         *,
         evidence_path: str | Path | None = None,
         token_budget: int | None = None,
+        sink: EvidenceSink | None = None,
     ) -> ContextGuard:
         """Build a guard from a YAML policy file — zero infra (ADR-010).
 
@@ -86,6 +91,7 @@ class ContextGuard:
             policy=Policy.from_dict(data),
             evidence_path=evidence_path,
             token_budget=token_budget,
+            sink=sink,
         )
 
     def guard(

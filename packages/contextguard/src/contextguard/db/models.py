@@ -9,8 +9,11 @@ nullable until phase 3 fills them.
 
 from __future__ import annotations
 
+from datetime import datetime
+from typing import Any
+
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import Float, Integer, String, Text
+from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -43,4 +46,26 @@ class ChunkRow(Base):
     risk_score: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
-__all__ = ["EMBEDDING_DIM", "Base", "ChunkRow"]
+class EvidenceRow(Base):
+    """One persisted ``EvidenceRecord`` (Milestone B4.2, ADR-006).
+
+    The full record lives in the ``record`` JSONB column (the frozen v1.0
+    contract); ``tenant``, ``user_sub``, ``created_at``, and ``policies_triggered``
+    are denormalized into indexed columns so audit queries (per tenant, per user,
+    per fired policy) do not scan the JSON. By construction the record carries no
+    original sensitive text (ADR-006 redaction-in-evidence invariant).
+    """
+
+    __tablename__ = "evidence"
+
+    query_id: Mapped[str] = mapped_column(String, primary_key=True)
+    tenant: Mapped[str] = mapped_column(String, index=True)
+    user_sub: Mapped[str] = mapped_column(String, index=True)
+    schema_version: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    # JSONB array of fired rule ids; GIN-indexed for containment (`@>`) queries.
+    policies_triggered: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    record: Mapped[dict[str, Any]] = mapped_column(JSONB)
+
+
+__all__ = ["EMBEDDING_DIM", "Base", "ChunkRow", "EvidenceRow"]

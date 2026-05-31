@@ -11,8 +11,28 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Protocol, runtime_checkable
 
 from contextguard.core.types import EvidenceRecord
+
+
+@runtime_checkable
+class EvidenceSink(Protocol):
+    """Where ``guard()`` writes one evidence record per query.
+
+    The structural contract both the zero-infra :class:`JsonlEvidenceSink` and
+    the Tier-A ``PostgresEvidenceSink`` satisfy, so the sink is injectable into
+    :class:`~contextguard.core.guard.ContextGuard` without the core importing any
+    database (ADR-010).
+    """
+
+    def emit(self, record: EvidenceRecord) -> None:
+        """Persist one evidence record."""
+        ...
+
+    def last_evidence(self) -> dict[str, object] | None:
+        """Return the last emitted record as a plain dict (or ``None``)."""
+        ...
 
 
 class JsonlEvidenceSink:
@@ -37,4 +57,4 @@ class JsonlEvidenceSink:
         return self._last
 
 
-__all__ = ["JsonlEvidenceSink"]
+__all__ = ["EvidenceSink", "JsonlEvidenceSink"]
