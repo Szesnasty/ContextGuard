@@ -20,6 +20,9 @@ node_modules/
 .vite/
 *.tsbuildinfo
 
+# Generated web assets (copied from repo-root reports by prebuild)
+apps/web/public/reports/
+
 # Env / secrets
 .env
 .env.*

@@ -2,8 +2,50 @@
   "name": "@contextguard/web",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "lint": "echo \"web lint: not implemented in phase 0\" && exit 0",
-    "test": "echo \"web test: not implemented in phase 0\" && exit 0"
+    "dev": "vite",
+    "predev": "node scripts/copy-reports.mjs",
+    "build": "vue-tsc -b && vite build",
+    "prebuild": "node scripts/copy-reports.mjs",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "gen:api": "openapi-typescript ../../packages/contracts/ts/openapi.json -o src/api/schema.d.ts",
+    "copy:reports": "node scripts/copy-reports.mjs"
+  },
+  "dependencies": {
+    "@tanstack/vue-query": "5.62.7",
+    "@tanstack/vue-table": "8.20.5",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "diff": "7.0.0",
+    "diff2html": "3.4.51",
+    "marked": "15.0.4",
+    "mermaid": "11.4.1",
+    "monaco-editor": "0.52.2",
+    "openapi-fetch": "0.13.1",
+    "pinia": "2.3.0",
+    "vue": "3.5.13",
+    "vue-router": "4.5.0",
+    "yaml": "2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "@types/diff": "7.0.2",
+    "@vitejs/plugin-vue": "5.2.1",
+    "@eslint/js": "9.17.0",
+    "@vue/eslint-config-typescript": "14.2.0",
+    "@vue/test-utils": "2.4.6",
+    "eslint": "9.17.0",
+    "eslint-plugin-vue": "9.32.0",
+    "jsdom": "25.0.1",
+    "openapi-typescript": "7.4.4",
+    "sass": "1.83.0",
+    "typescript": "5.7.2",
+    "vite": "6.0.5",
+    "vitest": "2.1.8",
+    "vue-tsc": "2.1.10"
   }
 }

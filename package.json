@@ -10,5 +10,10 @@
     "lint": "pnpm -r --if-present lint",
     "test": "pnpm -r --if-present test",
     "build": "pnpm -r --if-present build"
+  },
+  "pnpm": {
+    "overrides": {
+      "vite": "6.0.5"
+    }
   }
 }
