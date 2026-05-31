@@ -165,8 +165,17 @@ def _check(flag: bool) -> str:
     return "✅" if flag else "❌"
 
 
-def render_markdown(report: RedTeamReport, *, policy_path: str | Path = DEFAULT_POLICY) -> str:
-    """Render ``report`` as the committed ``RED-TEAM.md`` artifact."""
+def render_markdown(
+    report: RedTeamReport,
+    *,
+    policy_path: str | Path = DEFAULT_POLICY,
+    replay_mismatches: int | None = None,
+) -> str:
+    """Render ``report`` as the committed ``RED-TEAM.md`` artifact.
+
+    When ``replay_mismatches`` is supplied (the B5.3 determinism sweep), it is
+    surfaced as the ``cg_replay_mismatch_total`` audit line.
+    """
     policy_name = Path(policy_path).name
     lines: list[str] = [
         "# ContextGuard — red-team benchmark",
@@ -189,6 +198,10 @@ def render_markdown(report: RedTeamReport, *, policy_path: str | Path = DEFAULT_
         f"| Pass rate | {report.pass_rate:.0%} |",
         f"| Leak rate | {report.leak_rate:.0%} |",
         f"| False-positive rate | {report.false_positive_rate:.0%} |",
+    ]
+    if replay_mismatches is not None:
+        lines.append(f"| `cg_replay_mismatch_total` | {replay_mismatches} |")
+    lines += [
         "",
         "## By attack class",
         "",
@@ -222,12 +235,18 @@ def render_markdown(report: RedTeamReport, *, policy_path: str | Path = DEFAULT_
 
 def main() -> None:
     """CLI entry point: regenerate ``RED-TEAM.md`` at the repo root."""
+    from contextguard_eval_harness.determinism import run_determinism
+
     report = run_red_team()
+    determinism = run_determinism()
     out = DEFAULT_POLICY.parents[2] / "RED-TEAM.md"  # repo root
-    out.write_text(render_markdown(report) + "\n", encoding="utf-8")
+    out.write_text(
+        render_markdown(report, replay_mismatches=determinism.mismatches) + "\n", encoding="utf-8"
+    )
     print(
         f"red-team: wrote {out} ({report.total} cases, pass {report.pass_rate:.0%}, "
-        f"leak {report.leak_rate:.0%}, false-positive {report.false_positive_rate:.0%})"
+        f"leak {report.leak_rate:.0%}, false-positive {report.false_positive_rate:.0%}, "
+        f"replay-mismatches {determinism.mismatches})"
     )
 
 

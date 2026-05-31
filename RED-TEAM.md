@@ -12,6 +12,7 @@ Every case in `data/red-team-corpora/` is run through `ContextGuard.from_policy(
 | Pass rate | 100% |
 | Leak rate | 0% |
 | False-positive rate | 0% |
+| `cg_replay_mismatch_total` | 0 |
 
 ## By attack class
 
