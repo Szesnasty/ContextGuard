@@ -1,0 +1,39 @@
+// Design tokens — the single source of colour, spacing and typography for the
+// dashboard. Components `@use "@/styles/tokens" as *;` and never hard-code hex.
+$bg: #0f1419;
+$bg-elev: #1a212b;
+$bg-elev-2: #232c38;
+$border: #2b3645;
+$text: #e6edf3;
+$text-dim: #9aa7b4;
+$accent: #4f9cf9;
+$accent-dim: #2d6cdf;
+$allowed: #3fb950;
+$blocked: #f85149;
+$redacted: #d29922;
+
+$radius: 8px;
+$radius-lg: 10px;
+$gap: 1rem;
+
+$mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+$sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+@mixin card {
+  background: $bg-elev;
+  border: 1px solid $border;
+  border-radius: $radius-lg;
+  padding: 1rem 1.25rem;
+}
+
+@mixin tag($fg) {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba($fg, 0.15);
+  color: $fg;
+}
