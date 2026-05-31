@@ -38,6 +38,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/dev/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Identities
+         * @description List the demo identities the dev minter can issue tokens for.
+         */
+        get: operations["list_identities_v1_dev_identities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dev/token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mint Token
+         * @description Mint a signed token for a demo identity (dev only).
+         */
+        post: operations["mint_token_v1_dev_token_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/guard": {
         parameters: {
             query?: never;
@@ -144,6 +184,49 @@ export interface components {
          * @enum {string}
          */
         Classification: "public" | "internal" | "confidential" | "restricted";
+        /**
+         * DevIdentity
+         * @description A demo identity the dev minter can issue a token for.
+         */
+        DevIdentity: {
+            /** Purpose */
+            purpose: string;
+            /** Role */
+            role: string;
+            /** Sub */
+            sub: string;
+            /** Tenant */
+            tenant: string;
+        };
+        /**
+         * DevTokenRequest
+         * @description Which demo identity to mint a token for.
+         */
+        DevTokenRequest: {
+            /**
+             * Sub
+             * @description Demo identity 'sub' from data/users.yaml.
+             */
+            sub: string;
+        };
+        /**
+         * DevTokenResponse
+         * @description A freshly minted demo token and the identity it carries.
+         */
+        DevTokenResponse: {
+            /** Expires In */
+            expires_in: number;
+            /** Purpose */
+            purpose: string;
+            /** Role */
+            role: string;
+            /** Sub */
+            sub: string;
+            /** Tenant */
+            tenant: string;
+            /** Token */
+            token: string;
+        };
         /**
          * GuardRequest
          * @description A scan-only request: the query plus the candidate chunks to adjudicate.
@@ -348,6 +431,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_identities_v1_dev_identities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevIdentity"][];
+                };
+            };
+        };
+    };
+    mint_token_v1_dev_token_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevTokenRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevTokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

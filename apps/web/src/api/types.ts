@@ -12,3 +12,4 @@ export type QueryResponse = components["schemas"]["QueryResponse"];
 export type RetrievedChunk = components["schemas"]["RetrievedChunk"];
 export type Outcome = components["schemas"]["Outcome"];
 export type Classification = components["schemas"]["Classification"];
+export type DevTokenResponse = components["schemas"]["DevTokenResponse"];

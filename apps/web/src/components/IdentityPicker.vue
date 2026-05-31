@@ -4,6 +4,8 @@ import { useIdentityPicker } from "@/composables/useIdentityPicker";
 const {
   auth,
   tokenDraft,
+  isMinting,
+  mintError,
   identities,
   activeIdentity,
   mintHint,
@@ -11,6 +13,7 @@ const {
   selectIdentity,
   saveToken,
   removeToken,
+  generateToken,
 } = useIdentityPicker();
 </script>
 
@@ -68,20 +71,39 @@ const {
       v-if="!auth.isAuthenticated"
       class="picker__mint"
     >
-      <label>Mint a token for <code>{{ activeIdentity?.sub }}</code>, then paste it:</label>
-      <pre class="picker__cmd">{{ mintHint }}</pre>
-      <textarea
-        v-model="tokenDraft"
-        rows="2"
-        placeholder="eyJhbGciOi..."
-      />
       <button
-        class="picker__save"
-        :disabled="!canSaveToken"
-        @click="saveToken"
+        class="picker__generate"
+        :disabled="isMinting"
+        @click="generateToken"
       >
-        Save token
+        {{ isMinting ? "Generating…" : `Generate token for ${activeIdentity?.sub}` }}
       </button>
+      <span class="muted picker__hint">Dev-only — disabled in production.</span>
+
+      <p
+        v-if="mintError"
+        class="banner banner--err picker__warn"
+      >
+        {{ mintError }}
+      </p>
+
+      <details class="picker__manual">
+        <summary>Paste a token instead</summary>
+        <label>Mint with the CLI, then paste it:</label>
+        <pre class="picker__cmd">{{ mintHint }}</pre>
+        <textarea
+          v-model="tokenDraft"
+          rows="2"
+          placeholder="eyJhbGciOi..."
+        />
+        <button
+          class="picker__save"
+          :disabled="!canSaveToken"
+          @click="saveToken"
+        >
+          Save token
+        </button>
+      </details>
     </div>
   </div>
 </template>
@@ -125,6 +147,27 @@ const {
 
   &__mint {
     margin-top: 0.6rem;
+  }
+
+  &__generate {
+    background: $accent;
+    color: $bg;
+    font-weight: 600;
+  }
+
+  &__hint {
+    margin-left: 0.5rem;
+    font-size: 12px;
+  }
+
+  &__manual {
+    margin-top: 0.6rem;
+
+    summary {
+      cursor: pointer;
+      color: $text-dim;
+      font-size: 13px;
+    }
   }
 
   &__cmd {

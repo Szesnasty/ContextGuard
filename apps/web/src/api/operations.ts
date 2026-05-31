@@ -11,6 +11,7 @@
 // (ADR-015); the token carries it.
 import { api, describeError } from "./client";
 import type { Chunk, GuardedContext, QueryResponse, RetrievedChunk } from "./types";
+import type { DevTokenResponse } from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -51,6 +52,18 @@ export async function runQuery(query: string, k: number): Promise<QueryResponse>
 export async function guardChunks(query: string, chunks: Chunk[]): Promise<GuardedContext> {
   const { data, error, response } = await api.POST("/v1/guard", {
     body: { query, candidate_chunks: chunks },
+  });
+  if (error || !data) {
+    throw new ApiError(describeError(error, response.status), response.status);
+  }
+  return data;
+}
+
+/** Mint a signed demo token for `sub` (dev-only endpoint; disabled in prod). The
+ *  request carries no auth - it is the bootstrap that *produces* a token. */
+export async function mintToken(sub: string): Promise<DevTokenResponse> {
+  const { data, error, response } = await api.POST("/v1/dev/token", {
+    body: { sub },
   });
   if (error || !data) {
     throw new ApiError(describeError(error, response.status), response.status);

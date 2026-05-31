@@ -2,12 +2,15 @@
 // saving a pasted token into that slot. Keeps the SFC presentational.
 import { computed, ref } from "vue";
 
+import { ApiError, mintToken } from "@/api/operations";
 import { DEMO_IDENTITIES, mintCommand } from "@/lib/identities";
 import { useAuthStore } from "@/stores/auth";
 
 export function useIdentityPicker() {
   const auth = useAuthStore();
   const tokenDraft = ref("");
+  const isMinting = ref(false);
+  const mintError = ref("");
 
   const identities = DEMO_IDENTITIES;
   const activeIdentity = computed(
@@ -19,6 +22,7 @@ export function useIdentityPicker() {
   function selectIdentity(sub: string) {
     auth.selectIdentity(sub);
     tokenDraft.value = "";
+    mintError.value = "";
   }
 
   function saveToken() {
@@ -31,9 +35,27 @@ export function useIdentityPicker() {
     auth.setToken(auth.activeSub, "");
   }
 
+  async function generateToken() {
+    if (isMinting.value) return;
+    isMinting.value = true;
+    mintError.value = "";
+    try {
+      const minted = await mintToken(auth.activeSub);
+      auth.setToken(minted.sub, minted.token);
+      tokenDraft.value = "";
+    } catch (error) {
+      mintError.value =
+        error instanceof ApiError ? error.message : "Could not generate a token";
+    } finally {
+      isMinting.value = false;
+    }
+  }
+
   return {
     auth,
     tokenDraft,
+    isMinting,
+    mintError,
     identities,
     activeIdentity,
     mintHint,
@@ -41,5 +63,6 @@ export function useIdentityPicker() {
     selectIdentity,
     saveToken,
     removeToken,
+    generateToken,
   };
 }
