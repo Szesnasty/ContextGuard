@@ -10,7 +10,7 @@
 # committed. Every install/run below is FROZEN: it must match the lockfile or
 # fail loudly. Versions never drift implicitly. To change a dependency you must
 # run `make lock` explicitly, which is reviewable in the diff.
-UV_RUN := uv run --frozen
+UV_RUN := uv run --frozen $(if $(wildcard .env),--env-file .env,)
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
