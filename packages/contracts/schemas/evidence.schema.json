@@ -123,7 +123,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "The public, versioned audit record for one guarded query (v0).\n\nThis is the contract ADR-004 promises stays semver-stable. The JSON Schema\nsnapshot test makes any change to its shape a deliberate, reviewed act.",
+  "description": "The public, versioned audit record for one guarded query (v1, ADR-006).\n\nThis is the contract ADR-004 promises stays semver-stable. The JSON Schema\nsnapshot test makes any change to its shape a deliberate, reviewed act. By\nconstruction the record never carries original sensitive text: redaction\nruns before assembly, so only counts, decisions, and reasons are stored.",
   "properties": {
     "created_at": {
       "format": "date-time",
@@ -158,8 +158,8 @@
       "type": "string"
     },
     "schema_version": {
-      "const": "0.1",
-      "default": "0.1",
+      "const": "1.0",
+      "default": "1.0",
       "title": "Schema Version",
       "type": "string"
     },

@@ -6,9 +6,9 @@ on every run. A committed snapshot + the snapshot test (``test_schema_snapshot``
 turns any change to a public model into a deliberate, reviewed act — the
 mechanism behind ADR-004's semver stability for ``EvidenceRecord``.
 
-Bump rule: changing ``EvidenceRecord.schema_version`` (and therefore its schema)
-requires an ADR. The v0 schema previewed here is formalized as ADR-006 in
-phase 5.
+Bump rule (ADR-006): changing ``EvidenceRecord.schema_version`` (and therefore
+its schema) requires an ADR. Additive, optional fields bump the MINOR version;
+removing or retyping a field bumps MAJOR. The schema is frozen at **v1.0**.
 """
 
 from __future__ import annotations

@@ -59,7 +59,7 @@ def test_generator_idempotent(tmp_path: Path) -> None:
 def test_schema_version_literal_matches_snapshot() -> None:
     committed = json.loads((SCHEMA_DIR / "evidence.schema.json").read_text(encoding="utf-8"))
     const = committed["properties"]["schema_version"].get("const")
-    assert const == EVIDENCE_SCHEMA_VERSION == "0.1"
+    assert const == EVIDENCE_SCHEMA_VERSION == "1.0"
 
 
 def test_render_schema_accepts_basemodel() -> None:

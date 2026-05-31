@@ -9,7 +9,9 @@ boundary instead of a silent bug deep in the pipeline.
 ``EvidenceRecord`` is the public, versioned contract. Its ``schema_version`` is
 a ``Literal`` and a committed JSON Schema snapshot guards it against silent
 drift (see ``scripts/gen_schemas.py`` and the snapshot test). Bumping the
-version is a deliberate, reviewed act — formalized as ADR-006 in phase 5.
+version is a deliberate, reviewed act — frozen as **v1.0** and governed by
+ADR-006 (semver policy: additive fields bump MINOR, removals/retypes bump
+MAJOR).
 """
 
 from __future__ import annotations
@@ -21,8 +23,8 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .enums import Classification, Outcome, RiskType, SpanType
 
-EVIDENCE_SCHEMA_VERSION: Literal["0.1"] = "0.1"
-"""Current evidence-record schema version. Bumping requires an ADR (→ ADR-006)."""
+EVIDENCE_SCHEMA_VERSION: Literal["1.0"] = "1.0"
+"""Frozen evidence-record schema version (v1.0, ADR-006). Bumping requires an ADR."""
 
 _STRICT = ConfigDict(extra="forbid", frozen=True)
 
@@ -120,15 +122,17 @@ class EvidenceMetrics(BaseModel):
 
 
 class EvidenceRecord(BaseModel):
-    """The public, versioned audit record for one guarded query (v0).
+    """The public, versioned audit record for one guarded query (v1, ADR-006).
 
     This is the contract ADR-004 promises stays semver-stable. The JSON Schema
-    snapshot test makes any change to its shape a deliberate, reviewed act.
+    snapshot test makes any change to its shape a deliberate, reviewed act. By
+    construction the record never carries original sensitive text: redaction
+    runs before assembly, so only counts, decisions, and reasons are stored.
     """
 
     model_config = _STRICT
 
-    schema_version: Literal["0.1"] = EVIDENCE_SCHEMA_VERSION
+    schema_version: Literal["1.0"] = EVIDENCE_SCHEMA_VERSION
     query_id: str
     user: UserContext
     query: str

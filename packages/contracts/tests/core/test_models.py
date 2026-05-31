@@ -116,8 +116,8 @@ def test_serialization_roundtrip(model: BaseModel) -> None:
 
 def test_evidence_record_minimal_and_version() -> None:
     rec = _evidence()
-    assert rec.schema_version == "0.1"
-    assert EVIDENCE_SCHEMA_VERSION == "0.1"
+    assert rec.schema_version == "1.0"
+    assert EVIDENCE_SCHEMA_VERSION == "1.0"
 
 
 def test_chunk_decision_defaults() -> None:

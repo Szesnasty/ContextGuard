@@ -98,7 +98,7 @@ def test_evidence_dict_and_no_disk_without_path() -> None:
     guard.guard(_user(), "hi", _chunks(2))
     ev = guard.last_evidence()
     assert isinstance(ev, dict)
-    assert ev["schema_version"] == "0.1"
+    assert ev["schema_version"] == "1.0"
     assert ev["metrics"]["chunks_allowed"] == 2
 
 
