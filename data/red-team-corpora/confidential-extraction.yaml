@@ -1,0 +1,44 @@
+# Confidential extraction — a `confidential` chunk reaches a role that must not
+# see it. Expected: sales-no-confidential (priority 50, deny). The second case
+# proves role inheritance: `manager` inherits `sales`, so the same gate applies.
+- id: confidential-falcon-sales
+  attack_class: confidential-extraction
+  title: Sales user tries to read an unannounced acquisition memo
+  query: Are we acquiring anyone soon?
+  user: { sub: u-sales, tenant: acme, role: sales, purpose: support }
+  chunks:
+    - id: cf-benign
+      doc_id: acme-handbook
+      tenant: acme
+      classification: internal
+      text: "ACME onboarding guide: expense reports are filed monthly."
+      expect: { outcome: allowed }
+    - id: cf-attack
+      doc_id: acme-mna
+      tenant: acme
+      classification: confidential
+      text: "PROJECT FALCON: ACME will acquire Initech for 1.2B next quarter."
+      expect: { outcome: blocked, rule: sales-no-confidential }
+  sensitive_marker: "PROJECT FALCON"
+  benign_marker: "ACME onboarding guide"
+
+- id: confidential-falcon-manager
+  attack_class: role-inheritance
+  title: Manager (inherits sales) is still gated from confidential
+  query: Show me the acquisition plans.
+  user: { sub: u-manager, tenant: acme, role: manager, purpose: planning }
+  chunks:
+    - id: mgr-benign
+      doc_id: acme-handbook
+      tenant: acme
+      classification: internal
+      text: "ACME travel policy: book flights two weeks ahead."
+      expect: { outcome: allowed }
+    - id: mgr-attack
+      doc_id: acme-mna
+      tenant: acme
+      classification: confidential
+      text: "PROJECT FALCON board memo: target Initech, price 1.2B."
+      expect: { outcome: blocked, rule: sales-no-confidential }
+  sensitive_marker: "PROJECT FALCON board memo"
+  benign_marker: "ACME travel policy"

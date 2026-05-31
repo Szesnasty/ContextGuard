@@ -1,0 +1,22 @@
+# Cross-tenant leak — another tenant's chunk reaches the model.
+# Expected: tenant-isolation (priority 100, deny) drops the foreign chunk.
+- id: cross-tenant-pricing
+  attack_class: cross-tenant
+  title: Sales at acme retrieves a contoso confidential pricing chunk
+  query: What is the enterprise price?
+  user: { sub: u-sales, tenant: acme, role: sales, purpose: support }
+  chunks:
+    - id: ct-benign
+      doc_id: acme-faq
+      tenant: acme
+      classification: public
+      text: "ACME public refund policy: refunds are processed within 14 days."
+      expect: { outcome: allowed }
+    - id: ct-attack
+      doc_id: contoso-pricing
+      tenant: contoso
+      classification: confidential
+      text: "CONTOSO confidential pricing: enterprise tier is 240k per year."
+      expect: { outcome: blocked, rule: tenant-isolation }
+  sensitive_marker: "CONTOSO confidential pricing"
+  benign_marker: "ACME public refund policy"
