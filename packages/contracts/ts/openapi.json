@@ -142,6 +142,113 @@
         "title": "DevIdentity",
         "type": "object"
       },
+      "DevModel": {
+        "description": "One chat model installed in the local Ollama, with its disk size.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size_bytes": {
+            "default": 0,
+            "description": "On-disk size in bytes (0 if unknown).",
+            "title": "Size Bytes",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DevModel",
+        "type": "object"
+      },
+      "DevModelsResponse": {
+        "description": "The installed chat models and which one the query path is using now.",
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "string"
+          },
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/DevModel"
+            },
+            "title": "Models",
+            "type": "array"
+          }
+        },
+        "required": [
+          "active",
+          "models"
+        ],
+        "title": "DevModelsResponse",
+        "type": "object"
+      },
+      "DevPullModelRequest": {
+        "description": "Which model to download into the local Ollama.",
+        "properties": {
+          "model": {
+            "description": "Ollama model name, e.g. 'qwen2.5:7b'.",
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "DevPullModelRequest",
+        "type": "object"
+      },
+      "DevPullModelResponse": {
+        "description": "Result of a (blocking) model pull.",
+        "properties": {
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model",
+          "status"
+        ],
+        "title": "DevPullModelResponse",
+        "type": "object"
+      },
+      "DevSetModelRequest": {
+        "description": "Which installed model the query path should use from now on.",
+        "properties": {
+          "model": {
+            "description": "An installed Ollama model name.",
+            "minLength": 1,
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "DevSetModelRequest",
+        "type": "object"
+      },
+      "DevSetModelResponse": {
+        "description": "Confirmation that the live chat model was switched.",
+        "properties": {
+          "model": {
+            "title": "Model",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model"
+        ],
+        "title": "DevSetModelResponse",
+        "type": "object"
+      },
       "DevTokenRequest": {
         "description": "Which demo identity to mint a token for.",
         "properties": {
@@ -570,6 +677,112 @@
           }
         },
         "summary": "List Identities",
+        "tags": [
+          "dev"
+        ]
+      }
+    },
+    "/v1/dev/model": {
+      "post": {
+        "description": "Switch the model used by the live query path (dev only).\n\nThe gateway resolves ``OLLAMA_CHAT_MODEL`` on every call, so writing the env\nvar here re-points the already-cached gateway without a restart.",
+        "operationId": "set_model_v1_dev_model_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevSetModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevSetModelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Model",
+        "tags": [
+          "dev"
+        ]
+      }
+    },
+    "/v1/dev/models": {
+      "get": {
+        "description": "List the chat models installed in the local Ollama and the active one.",
+        "operationId": "list_models_v1_dev_models_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevModelsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Models",
+        "tags": [
+          "dev"
+        ]
+      }
+    },
+    "/v1/dev/models/pull": {
+      "post": {
+        "description": "Download a model into the local Ollama (blocking, dev only).",
+        "operationId": "pull_model_v1_dev_models_pull_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevPullModelRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevPullModelResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pull Model",
         "tags": [
           "dev"
         ]

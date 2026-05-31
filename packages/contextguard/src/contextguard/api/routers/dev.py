@@ -30,6 +30,12 @@ router = APIRouter(tags=["dev"])
 # Default location of the demo identities, overridable for tests / alt layouts.
 _USERS_PATH = Path(os.getenv("USERS_PATH", "data/users.yaml"))
 
+_DEFAULT_OLLAMA_URL = "http://localhost:11434"
+_DEFAULT_CHAT_MODEL = "qwen2.5:7b"
+# Pulling a model downloads gigabytes; give Ollama a generous blocking window.
+_PULL_TIMEOUT_SECONDS = 1800.0
+
+
 
 class DevTokenRequest(BaseModel):
     """Which demo identity to mint a token for."""
@@ -55,6 +61,46 @@ class DevTokenResponse(BaseModel):
     role: str
     purpose: str
     expires_in: int
+
+
+class DevModel(BaseModel):
+    """One chat model installed in the local Ollama, with its disk size."""
+
+    name: str
+    size_bytes: int = Field(0, description="On-disk size in bytes (0 if unknown).")
+
+
+class DevModelsResponse(BaseModel):
+    """The installed chat models and which one the query path is using now."""
+
+    active: str
+    models: list[DevModel]
+
+
+class DevSetModelRequest(BaseModel):
+    """Which installed model the query path should use from now on."""
+
+    model: str = Field(..., min_length=1, description="An installed Ollama model name.")
+
+
+class DevSetModelResponse(BaseModel):
+    """Confirmation that the live chat model was switched."""
+
+    model: str
+
+
+class DevPullModelRequest(BaseModel):
+    """Which model to download into the local Ollama."""
+
+    model: str = Field(..., min_length=1, description="Ollama model name, e.g. 'qwen2.5:7b'.")
+
+
+class DevPullModelResponse(BaseModel):
+    """Result of a (blocking) model pull."""
+
+    model: str
+    status: str
+
 
 
 @lru_cache(maxsize=1)
@@ -104,6 +150,96 @@ def mint_token(request: DevTokenRequest) -> DevTokenResponse:
         purpose=user.purpose,
         expires_in=DEFAULT_TTL_SECONDS,
     )
+
+
+def _ollama_base_url() -> str:
+    return (os.getenv("OLLAMA_BASE_URL") or _DEFAULT_OLLAMA_URL).rstrip("/")
+
+
+def _active_model() -> str:
+    return os.getenv("OLLAMA_CHAT_MODEL") or _DEFAULT_CHAT_MODEL
+
+
+def _require_dev_enabled() -> None:
+    if not _dev_minting_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"error": "dev tools are disabled (JWT_SECRET is configured)"},
+        )
+
+
+def _installed_models() -> list[DevModel]:
+    """Ask the local Ollama which chat models are pulled (GET /api/tags)."""
+    import httpx
+
+    try:
+        resp = httpx.get(f"{_ollama_base_url()}/api/tags", timeout=10.0)
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": f"cannot reach Ollama at {_ollama_base_url()}", "cause": str(exc)},
+        ) from exc
+
+    models = resp.json().get("models", [])
+    return [
+        DevModel(name=entry["name"], size_bytes=int(entry.get("size", 0)))
+        for entry in models
+        if entry.get("name")
+    ]
+
+
+@router.get("/v1/dev/models", response_model=DevModelsResponse)
+def list_models() -> DevModelsResponse:
+    """List the chat models installed in the local Ollama and the active one."""
+    _require_dev_enabled()
+    return DevModelsResponse(active=_active_model(), models=_installed_models())
+
+
+@router.post("/v1/dev/model", response_model=DevSetModelResponse)
+def set_model(request: DevSetModelRequest) -> DevSetModelResponse:
+    """Switch the model used by the live query path (dev only).
+
+    The gateway resolves ``OLLAMA_CHAT_MODEL`` on every call, so writing the env
+    var here re-points the already-cached gateway without a restart.
+    """
+    _require_dev_enabled()
+
+    installed = {model.name for model in _installed_models()}
+    if request.model not in installed:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": f"model {request.model!r} is not installed",
+                "hint": "pull it first via POST /v1/dev/models/pull",
+            },
+        )
+
+    os.environ["OLLAMA_CHAT_MODEL"] = request.model
+    return DevSetModelResponse(model=request.model)
+
+
+@router.post("/v1/dev/models/pull", response_model=DevPullModelResponse)
+def pull_model(request: DevPullModelRequest) -> DevPullModelResponse:
+    """Download a model into the local Ollama (blocking, dev only)."""
+    _require_dev_enabled()
+
+    import httpx
+
+    try:
+        resp = httpx.post(
+            f"{_ollama_base_url()}/api/pull",
+            json={"model": request.model, "stream": False},
+            timeout=_PULL_TIMEOUT_SECONDS,
+        )
+        resp.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": f"pull of {request.model!r} failed", "cause": str(exc)},
+        ) from exc
+
+    return DevPullModelResponse(model=request.model, status=str(resp.json().get("status", "ok")))
 
 
 __all__ = ["router"]

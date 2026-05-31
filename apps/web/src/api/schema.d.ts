@@ -58,6 +58,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/dev/model": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Model
+         * @description Switch the model used by the live query path (dev only).
+         *
+         *     The gateway resolves ``OLLAMA_CHAT_MODEL`` on every call, so writing the env
+         *     var here re-points the already-cached gateway without a restart.
+         */
+        post: operations["set_model_v1_dev_model_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dev/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Models
+         * @description List the chat models installed in the local Ollama and the active one.
+         */
+        get: operations["list_models_v1_dev_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/dev/models/pull": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pull Model
+         * @description Download a model into the local Ollama (blocking, dev only).
+         */
+        post: operations["pull_model_v1_dev_models_pull_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/dev/token": {
         parameters: {
             query?: never;
@@ -197,6 +260,70 @@ export interface components {
             sub: string;
             /** Tenant */
             tenant: string;
+        };
+        /**
+         * DevModel
+         * @description One chat model installed in the local Ollama, with its disk size.
+         */
+        DevModel: {
+            /** Name */
+            name: string;
+            /**
+             * Size Bytes
+             * @description On-disk size in bytes (0 if unknown).
+             * @default 0
+             */
+            size_bytes: number;
+        };
+        /**
+         * DevModelsResponse
+         * @description The installed chat models and which one the query path is using now.
+         */
+        DevModelsResponse: {
+            /** Active */
+            active: string;
+            /** Models */
+            models: components["schemas"]["DevModel"][];
+        };
+        /**
+         * DevPullModelRequest
+         * @description Which model to download into the local Ollama.
+         */
+        DevPullModelRequest: {
+            /**
+             * Model
+             * @description Ollama model name, e.g. 'qwen2.5:7b'.
+             */
+            model: string;
+        };
+        /**
+         * DevPullModelResponse
+         * @description Result of a (blocking) model pull.
+         */
+        DevPullModelResponse: {
+            /** Model */
+            model: string;
+            /** Status */
+            status: string;
+        };
+        /**
+         * DevSetModelRequest
+         * @description Which installed model the query path should use from now on.
+         */
+        DevSetModelRequest: {
+            /**
+             * Model
+             * @description An installed Ollama model name.
+             */
+            model: string;
+        };
+        /**
+         * DevSetModelResponse
+         * @description Confirmation that the live chat model was switched.
+         */
+        DevSetModelResponse: {
+            /** Model */
+            model: string;
         };
         /**
          * DevTokenRequest
@@ -451,6 +578,92 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DevIdentity"][];
+                };
+            };
+        };
+    };
+    set_model_v1_dev_model_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevSetModelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevSetModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_v1_dev_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevModelsResponse"];
+                };
+            };
+        };
+    };
+    pull_model_v1_dev_models_pull_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevPullModelRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevPullModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

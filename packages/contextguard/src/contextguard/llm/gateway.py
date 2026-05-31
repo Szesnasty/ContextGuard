@@ -71,7 +71,11 @@ class OllamaGateway:
         base_url: str | None = None,
         timeout: float | None = None,
     ) -> None:
-        self._model = model or os.getenv("OLLAMA_CHAT_MODEL") or _DEFAULT_OLLAMA_MODEL
+        # An explicit ``model`` pins the gateway (used by tests). Otherwise the
+        # model is resolved *dynamically* from ``OLLAMA_CHAT_MODEL`` on every call,
+        # so the dev model picker (POST /v1/dev/model) can switch the live model
+        # at runtime without rebuilding the lru_cached gateway (ADR-015).
+        self._model_override = model
         self._base_url = (base_url or os.getenv("OLLAMA_BASE_URL") or _DEFAULT_OLLAMA_URL).rstrip(
             "/"
         )
@@ -81,21 +85,22 @@ class OllamaGateway:
 
     @property
     def model(self) -> str:
-        return self._model
+        return self._model_override or os.getenv("OLLAMA_CHAT_MODEL") or _DEFAULT_OLLAMA_MODEL
 
     def complete(self, messages: list[Message]) -> Completion:
         import httpx
 
+        model = self.model
         resp = httpx.post(
             f"{self._base_url}/api/chat",
-            json={"model": self._model, "messages": messages, "stream": False},
+            json={"model": model, "messages": messages, "stream": False},
             timeout=self._timeout,
         )
         resp.raise_for_status()
         body = resp.json()
         return Completion(
             text=body["message"]["content"],
-            model=self._model,
+            model=model,
             prompt_tokens=int(body.get("prompt_eval_count", 0)),
             completion_tokens=int(body.get("eval_count", 0)),
         )

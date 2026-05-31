@@ -11,7 +11,12 @@
 // (ADR-015); the token carries it.
 import { api, describeError } from "./client";
 import type { Chunk, GuardedContext, QueryResponse, RetrievedChunk } from "./types";
-import type { DevTokenResponse } from "./types";
+import type {
+  DevModelsResponse,
+  DevPullModelResponse,
+  DevSetModelResponse,
+  DevTokenResponse,
+} from "./types";
 
 export class ApiError extends Error {
   constructor(
@@ -64,6 +69,40 @@ export async function guardChunks(query: string, chunks: Chunk[]): Promise<Guard
 export async function mintToken(sub: string): Promise<DevTokenResponse> {
   const { data, error, response } = await api.POST("/v1/dev/token", {
     body: { sub },
+  });
+  if (error || !data) {
+    throw new ApiError(describeError(error, response.status), response.status);
+  }
+  return data;
+}
+
+/** List the chat models installed in the local Ollama plus the active one
+ *  (dev-only; disabled in prod). */
+export async function listModels(): Promise<DevModelsResponse> {
+  // openapi-fetch types a no-parameter GET (no 4xx in the schema) as `never`,
+  // so we can't read `response.status` here - the error body carries the reason.
+  const { data, error } = await api.GET("/v1/dev/models");
+  if (error || !data) {
+    throw new ApiError(describeError(error));
+  }
+  return data;
+}
+
+/** Switch the model the live query path uses (dev-only). */
+export async function setModel(model: string): Promise<DevSetModelResponse> {
+  const { data, error, response } = await api.POST("/v1/dev/model", {
+    body: { model },
+  });
+  if (error || !data) {
+    throw new ApiError(describeError(error, response.status), response.status);
+  }
+  return data;
+}
+
+/** Download a model into the local Ollama. Blocks until the pull finishes. */
+export async function pullModel(model: string): Promise<DevPullModelResponse> {
+  const { data, error, response } = await api.POST("/v1/dev/models/pull", {
+    body: { model },
   });
   if (error || !data) {
     throw new ApiError(describeError(error, response.status), response.status);

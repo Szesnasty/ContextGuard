@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import IdentityPicker from "@/components/IdentityPicker.vue";
+import ModelPicker from "@/components/ModelPicker.vue";
 import RagDrawer from "@/components/RagDrawer.vue";
 import { useQueryConsole } from "@/composables/useQueryConsole";
 import { tally, tokenReduction } from "@/lib/firewall";
@@ -32,6 +33,8 @@ const {
     </header>
 
     <IdentityPicker />
+
+    <ModelPicker />
 
     <div class="console__thread">
       <p
