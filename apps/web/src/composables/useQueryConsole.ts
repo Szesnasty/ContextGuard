@@ -6,6 +6,7 @@ import { ref } from "vue";
 
 import type { GuardedContext, RetrievedChunk } from "@/api/types";
 import { guardChunks, retrievedToChunk, runQuery } from "@/api/operations";
+import type { AttackPrompt } from "@/lib/corpus";
 import { useAuthStore } from "@/stores/auth";
 import { useHistoryStore } from "@/stores/history";
 
@@ -40,6 +41,7 @@ export function useQueryConsole() {
   const isSending = ref(false);
   const drawerOpen = ref(false);
   const drawerRun = ref<ConsoleRun | null>(null);
+  const corpusOpen = ref(false);
 
   function pushMessage(role: ChatMessage["role"], text: string, run: ConsoleRun | null): void {
     messages.value.push({ id: crypto.randomUUID(), role, text, run });
@@ -93,6 +95,22 @@ export function useQueryConsole() {
     drawerOpen.value = false;
   }
 
+  function openCorpus(): void {
+    corpusOpen.value = true;
+  }
+
+  function closeCorpus(): void {
+    corpusOpen.value = false;
+  }
+
+  // Load a planted attack: select the identity it targets, drop its text in the
+  // composer, and close the drawer so the operator just hits Send.
+  function loadAttack(attack: AttackPrompt): void {
+    auth.selectIdentity(attack.sub);
+    input.value = attack.prompt;
+    corpusOpen.value = false;
+  }
+
   return {
     auth,
     input,
@@ -102,9 +120,13 @@ export function useQueryConsole() {
     isSending,
     drawerOpen,
     drawerRun,
+    corpusOpen,
     emptyGuard: EMPTY_GUARD,
     send,
     openDrawer,
     closeDrawer,
+    openCorpus,
+    closeCorpus,
+    loadAttack,
   };
 }

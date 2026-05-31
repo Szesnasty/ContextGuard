@@ -20,9 +20,6 @@ const auth = useAuthStore();
         <RouterLink to="/policy">
           Policy
         </RouterLink>
-        <RouterLink to="/red-team">
-          Red Team
-        </RouterLink>
       </nav>
       <span
         class="shell__identity"

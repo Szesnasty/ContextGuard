@@ -22,12 +22,6 @@ const router = createRouter({
       component: () => import("@/views/PolicyEditor.vue"),
       meta: { title: "Policy Editor" },
     },
-    {
-      path: "/red-team",
-      name: "red-team",
-      component: () => import("@/views/RedTeamRuns.vue"),
-      meta: { title: "Red Team Runs" },
-    },
   ],
 });
 

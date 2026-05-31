@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CorpusDrawer from "@/components/CorpusDrawer.vue";
 import IdentityPicker from "@/components/IdentityPicker.vue";
 import ModelPicker from "@/components/ModelPicker.vue";
 import RagDrawer from "@/components/RagDrawer.vue";
@@ -13,10 +14,14 @@ const {
   isSending,
   drawerOpen,
   drawerRun,
+  corpusOpen,
   emptyGuard,
   send,
   openDrawer,
   closeDrawer,
+  openCorpus,
+  closeCorpus,
+  loadAttack,
 } = useQueryConsole();
 </script>
 
@@ -30,6 +35,12 @@ const {
         Ask a question. The model answers from retrieved documents — then the firewall shows you
         which sources it would <em>allow</em>, <em>redact</em> or <em>block</em> for your identity.
       </p>
+      <button
+        class="ghost console__corpus"
+        @click="openCorpus"
+      >
+        📚 Documents &amp; attacks
+      </button>
     </header>
 
     <IdentityPicker />
@@ -119,6 +130,12 @@ const {
       :guarded="drawerRun?.guarded ?? emptyGuard"
       @close="closeDrawer"
     />
+
+    <CorpusDrawer
+      :open="corpusOpen"
+      @close="closeCorpus"
+      @load="loadAttack"
+    />
   </section>
 </template>
 
@@ -134,6 +151,10 @@ const {
 
   &__head {
     margin-bottom: 0.25rem;
+  }
+
+  &__corpus {
+    margin-top: 0.5rem;
   }
 
   &__title {

@@ -3,7 +3,7 @@ import { toRef } from "vue";
 
 import type { GuardedContext, RetrievedChunk } from "@/api/types";
 import { useRagDrawer } from "@/composables/useRagDrawer";
-import { classificationClass, outcomeClass } from "@/lib/firewall";
+import { classificationClass, outcomeClass, renderMd } from "@/lib/firewall";
 
 const props = defineProps<{
   open: boolean;
@@ -145,9 +145,11 @@ const { documents, selectedDocument, inPromptCount, withheldCount, selectDocumen
                 class="passage__note"
               >✕ not sent to model</span>
             </div>
-            <p class="passage__text">
-              {{ chunk.text }}
-            </p>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div
+              class="passage__text"
+              v-html="renderMd(chunk.text)"
+            />
             <div
               v-if="chunk.reasons.length || chunk.policies.length"
               class="passage__why muted"
@@ -328,7 +330,11 @@ const { documents, selectedDocument, inPromptCount, withheldCount, selectDocumen
 
   &__text {
     margin: 0;
-    white-space: pre-wrap;
+
+    :deep(p) { margin: 0 0 0.35rem; }
+    :deep(ul) { margin: 0 0 0.35rem; padding-left: 1.2em; }
+    :deep(li) { margin: 0.15rem 0; }
+    :deep(h3), :deep(h4), :deep(h5) { margin: 0 0 0.25rem; font-size: 0.95em; }
   }
 
   &__why {

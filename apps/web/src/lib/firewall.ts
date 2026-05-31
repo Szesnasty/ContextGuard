@@ -175,6 +175,50 @@ export function groupByDocument(chunks: EnrichedChunk[]): DocumentGroup[] {
   return [...groups.values()].sort((a, b) => b.bestScore - a.bestScore);
 }
 
+/**
+ * Minimal Markdown → safe HTML renderer for document text shown in drawers.
+ * Handles headings, bold, italic, bullet lists, code and line-breaks.
+ * Escapes HTML first so it is safe for v-html with trusted corpus content.
+ */
+export function renderMd(raw: string): string {
+  const esc = raw
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  const lines = esc.split("\n");
+  const out: string[] = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const heading = line.match(/^(#{1,3}) (.+)$/);
+    const bullet = line.match(/^[-*] (.+)$/);
+
+    if (heading) {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const tag = `h${heading[1].length + 2}`; // # → h3, ## → h4, ### → h5
+      out.push(`<${tag}>${inline(heading[2])}</${tag}>`);
+    } else if (bullet) {
+      if (!inList) { out.push("<ul>"); inList = true; }
+      out.push(`<li>${inline(bullet[1])}</li>`);
+    } else {
+      if (inList) { out.push("</ul>"); inList = false; }
+      const text = inline(line);
+      out.push(text.trim() === "" ? "<br>" : `<p>${text}</p>`);
+    }
+  }
+
+  if (inList) out.push("</ul>");
+  return out.join("");
+}
+
+function inline(s: string): string {
+  return s
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+}
+
 export function classificationClass(classification: string): string {
   switch (classification) {
     case "public":
