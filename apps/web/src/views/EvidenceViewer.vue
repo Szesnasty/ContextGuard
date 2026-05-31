@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import "diff2html/bundles/css/diff2html.min.css";
-
 import DecisionsTable from "@/components/DecisionsTable.vue";
 import MermaidDiagram from "@/components/MermaidDiagram.vue";
 import { useEvidenceViewer } from "@/composables/useEvidenceViewer";
@@ -14,7 +12,7 @@ const {
   reduction,
   contained,
   enforcedDecisions,
-  contextDiff,
+  contextDelta,
   selectRun,
 } = useEvidenceViewer();
 </script>
@@ -99,13 +97,23 @@ const {
 
         <div class="card">
           <h2 class="detail__h">
-            Context diff — retrieved vs. sent to model
+            Context delta — what reached the model
           </h2>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div
-            class="detail__diff"
-            v-html="contextDiff"
-          />
+          <p class="muted detail__legend">
+            Lines marked <span class="delta__chip delta__chip--removed">withheld</span> were blocked
+            or redacted; the rest is what the model actually saw.
+          </p>
+          <div class="delta">
+            <div
+              v-for="line in contextDelta"
+              :key="line.id"
+              class="delta__line"
+              :class="`delta__line--${line.type}`"
+            >
+              <span class="delta__sign">{{ line.type === "removed" ? "−" : line.type === "added" ? "+" : "" }}</span>
+              <span class="delta__text">{{ line.text }}</span>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -193,9 +201,68 @@ const {
     font-size: 15px;
   }
 
-  &__diff {
-    overflow-x: auto;
-    max-width: 100%;
+  &__legend {
+    margin: 0 0 0.6rem;
+    font-size: 13px;
   }
 }
+
+.delta {
+  max-height: 22rem;
+  overflow-y: auto;
+  border: 1px solid $border;
+  border-radius: 6px;
+  background: $bg;
+  font-family: $mono;
+  font-size: 12px;
+  line-height: 1.5;
+
+  &__line {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 0.6rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+
+    &--removed {
+      background: rgba($blocked, 0.12);
+      color: $blocked;
+      text-decoration: line-through;
+    }
+
+    &--added {
+      background: rgba($allowed, 0.12);
+      color: $allowed;
+    }
+
+    &--context {
+      color: $text-dim;
+    }
+  }
+
+  &__sign {
+    flex: 0 0 0.8rem;
+    text-align: center;
+    user-select: none;
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.delta__chip {
+  display: inline-block;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &--removed {
+    background: rgba($blocked, 0.16);
+    color: $blocked;
+  }
+}
+
 </style>

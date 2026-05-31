@@ -28,9 +28,6 @@ importers:
       diff:
         specifier: 7.0.0
         version: 7.0.0
-      diff2html:
-        specifier: 3.4.51
-        version: 3.4.51
       marked:
         specifier: 15.0.4
         version: 15.0.4
@@ -949,9 +946,6 @@ packages:
   '@vue/test-utils@2.4.6':
     resolution: {integrity: sha512-FMxEjOpYNYiFe0GkaHsnJPXFHxQ6m4t8vI/ElPGpMWxZKpmRvQ33OIrvRXemy6yha03RxhOlQuy+gZMC3CQSow==}
 
-  abbrev@1.1.1:
-    resolution: {integrity: sha512-nne9/IiQ/hzIhY6pdDnbBtz7DjPTKrY00P/zvPSm5pOFkl6xuGrGnXn/VtTNNfNtAfZ9/1RtehkszU9qcTii0Q==}
-
   abbrev@2.0.0:
     resolution: {integrity: sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==}
     engines: {node: ^14.17.0 || ^16.13.0 || >=18.0.0}
@@ -1336,10 +1330,6 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  diff2html@3.4.51:
-    resolution: {integrity: sha512-/rVCSDyokkzSCEGaGjkkElXtIRwyNDRzIa3S8VUhR6pjk25p6+AMnb1s2zGmhjl66D5m/HnV3IeZoxnWsvTy+w==}
-    engines: {node: '>=12'}
-
   diff@7.0.0:
     resolution: {integrity: sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw==}
     engines: {node: '>=0.3.1'}
@@ -1601,14 +1591,6 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
-  highlight.js@11.9.0:
-    resolution: {integrity: sha512-fJ7cW7fQGCYAkgv4CPfwFHrfd/cLS4Hau96JuJ+ZTOWhjnhoeN1ub1tFmALm/+lW5z4WCAuAV9bm05AP0mS6Gw==}
-    engines: {node: '>=12.0.0'}
-
-  hogan.js@3.0.2:
-    resolution: {integrity: sha512-RqGs4wavGYJWE07t35JQccByczmNUXQT0E12ZYV1VKYu5UiAU9lsos/yBAcf840+zrUQQxgVduCR5/B8nNtibg==}
-    hasBin: true
-
   html-encoding-sniffer@4.0.0:
     resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
     engines: {node: '>=18'}
@@ -1831,10 +1813,6 @@ packages:
     resolution: {integrity: sha512-tEBHqDnIoM/1rXME1zgka9g6Q2lcoCkxHLuc7ODJ5BxbP5d4c2Z5cGgtXAku59200Cx7diuHTOYfSBD8n6mm8A==}
     engines: {node: '>=16 || 14 >=14.17'}
 
-  mkdirp@0.3.0:
-    resolution: {integrity: sha512-OHsdUcVAQ6pOtg5JYWpCBo9W/GySVuwvP9hueRMW7UqshC0tbfzLv8wjySTPm3tfUZ/21CE9E1pJagOA91Pxew==}
-    deprecated: Legacy versions of mkdirp are no longer supported. Please update to mkdirp 1.x. (Note that the API surface has changed to use Promises in 1.x.)
-
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
 
@@ -1857,10 +1835,6 @@ packages:
 
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
-
-  nopt@1.0.10:
-    resolution: {integrity: sha512-NWmpvLSqUrgrAC9HCuxEvb+PSloHpqVu+FqcO4eeF2h5qYRhA7ev6KvelyQAKtegUbC6RypJnlEOhd8vloNKYg==}
-    hasBin: true
 
   nopt@7.2.1:
     resolution: {integrity: sha512-taM24ViiimT/XntxbPyJQzCG+p4EKOpgD3mxFwW38mGjVUrfERQOeY4EDHjdnptttfHuHQXFx+lTP08Q+mLa/w==}
@@ -3262,8 +3236,6 @@ snapshots:
       js-beautify: 1.15.4
       vue-component-type-helpers: 2.2.12
 
-  abbrev@1.1.1: {}
-
   abbrev@2.0.0: {}
 
   acorn-jsx@5.3.2(acorn@8.16.0):
@@ -3645,13 +3617,6 @@ snapshots:
   detect-libc@2.1.2:
     optional: true
 
-  diff2html@3.4.51:
-    dependencies:
-      diff: 7.0.0
-      hogan.js: 3.0.2
-    optionalDependencies:
-      highlight.js: 11.9.0
-
   diff@7.0.0: {}
 
   dompurify@3.4.7:
@@ -3955,14 +3920,6 @@ snapshots:
 
   he@1.2.0: {}
 
-  highlight.js@11.9.0:
-    optional: true
-
-  hogan.js@3.0.2:
-    dependencies:
-      mkdirp: 0.3.0
-      nopt: 1.0.10
-
   html-encoding-sniffer@4.0.0:
     dependencies:
       whatwg-encoding: 3.1.1
@@ -4197,8 +4154,6 @@ snapshots:
 
   minipass@7.1.3: {}
 
-  mkdirp@0.3.0: {}
-
   mlly@1.8.2:
     dependencies:
       acorn: 8.16.0
@@ -4218,10 +4173,6 @@ snapshots:
 
   node-addon-api@7.1.1:
     optional: true
-
-  nopt@1.0.10:
-    dependencies:
-      abbrev: 1.1.1
 
   nopt@7.2.1:
     dependencies:

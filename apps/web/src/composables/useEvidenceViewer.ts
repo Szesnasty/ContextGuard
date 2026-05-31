@@ -1,8 +1,7 @@
 // Evidence Viewer logic: reads past runs from the history store and, for the
 // selected run, derives the firewall's evidence — a flow diagram, the
-// before/after context diff, and the enforced (blocked/redacted) decisions.
-import { createTwoFilesPatch } from "diff";
-import { html as diffHtml } from "diff2html";
+// before/after context delta, and the enforced (blocked/redacted) decisions.
+import { diffLines } from "diff";
 import { computed } from "vue";
 
 import {
@@ -15,6 +14,14 @@ import {
   tokenReduction,
 } from "@/lib/firewall";
 import { useHistoryStore } from "@/stores/history";
+
+/** One rendered line of the context delta: kept context, or withheld/added. */
+export interface DeltaLine {
+  id: number;
+  type: "context" | "removed" | "added";
+  text: string;
+}
+
 
 export function useEvidenceViewer() {
   const history = useHistoryStore();
@@ -39,21 +46,20 @@ export function useEvidenceViewer() {
     selected.value ? enforced(selected.value.guarded) : [],
   );
 
-  const contextDiff = computed(() => {
-    if (!selected.value) return "";
+  const contextDelta = computed<DeltaLine[]>(() => {
+    if (!selected.value) return [];
     const before = contextBefore(selected.value.retrieved);
     const after = contextAfter(selected.value.guarded);
-    const patch = createTwoFilesPatch(
-      "retrieved-context",
-      "guarded-context",
-      `${before}\n`,
-      `${after}\n`,
-    );
-    return diffHtml(patch, {
-      drawFileList: false,
-      matching: "lines",
-      outputFormat: "side-by-side",
-    });
+    const lines: DeltaLine[] = [];
+    let id = 0;
+    for (const part of diffLines(before, after)) {
+      const type = part.added ? "added" : part.removed ? "removed" : "context";
+      for (const raw of part.value.split("\n")) {
+        if (!raw.length) continue;
+        lines.push({ id: id++, type, text: raw });
+      }
+    }
+    return lines;
   });
 
   function selectRun(id: string) {
@@ -69,7 +75,7 @@ export function useEvidenceViewer() {
     reduction,
     contained,
     enforcedDecisions,
-    contextDiff,
+    contextDelta,
     selectRun,
   };
 }
