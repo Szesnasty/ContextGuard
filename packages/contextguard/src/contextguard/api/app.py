@@ -35,4 +35,10 @@ def create_app() -> FastAPI:
     app.include_router(query_router)
     app.include_router(guard_router)
 
+    # Dev-only identity minting for the dashboard. The router self-disables (403)
+    # whenever a real JWT_SECRET is configured, so it is inert in production.
+    from contextguard.api.routers.dev import router as dev_router
+
+    app.include_router(dev_router)
+
     return app

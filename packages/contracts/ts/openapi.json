@@ -113,6 +113,90 @@
         "title": "Classification",
         "type": "string"
       },
+      "DevIdentity": {
+        "description": "A demo identity the dev minter can issue a token for.",
+        "properties": {
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "sub": {
+            "title": "Sub",
+            "type": "string"
+          },
+          "tenant": {
+            "title": "Tenant",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sub",
+          "tenant",
+          "role",
+          "purpose"
+        ],
+        "title": "DevIdentity",
+        "type": "object"
+      },
+      "DevTokenRequest": {
+        "description": "Which demo identity to mint a token for.",
+        "properties": {
+          "sub": {
+            "description": "Demo identity 'sub' from data/users.yaml.",
+            "minLength": 1,
+            "title": "Sub",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sub"
+        ],
+        "title": "DevTokenRequest",
+        "type": "object"
+      },
+      "DevTokenResponse": {
+        "description": "A freshly minted demo token and the identity it carries.",
+        "properties": {
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "sub": {
+            "title": "Sub",
+            "type": "string"
+          },
+          "tenant": {
+            "title": "Tenant",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "sub",
+          "tenant",
+          "role",
+          "purpose",
+          "expires_in"
+        ],
+        "title": "DevTokenResponse",
+        "type": "object"
+      },
       "GuardRequest": {
         "additionalProperties": false,
         "description": "A scan-only request: the query plus the candidate chunks to adjudicate.\n\nIdentity is NOT carried here - it is derived from the verified Bearer token\nat the HTTP boundary (ADR-015). The caller supplies the chunks to guard, so\nthe scan runs without retrieval or a model call (Milestone B3.3).",
@@ -462,6 +546,74 @@
         "summary": "Metrics",
         "tags": [
           "meta"
+        ]
+      }
+    },
+    "/v1/dev/identities": {
+      "get": {
+        "description": "List the demo identities the dev minter can issue tokens for.",
+        "operationId": "list_identities_v1_dev_identities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DevIdentity"
+                  },
+                  "title": "Response List Identities V1 Dev Identities Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Identities",
+        "tags": [
+          "dev"
+        ]
+      }
+    },
+    "/v1/dev/token": {
+      "post": {
+        "description": "Mint a signed token for a demo identity (dev only).",
+        "operationId": "mint_token_v1_dev_token_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mint Token",
+        "tags": [
+          "dev"
         ]
       }
     },
