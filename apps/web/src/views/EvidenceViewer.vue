@@ -133,7 +133,7 @@ const {
 
   &__layout {
     display: grid;
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
     gap: $gap;
     align-items: start;
   }
@@ -180,6 +180,7 @@ const {
   display: flex;
   flex-direction: column;
   gap: $gap;
+  min-width: 0;
 
   &__stats {
     display: flex;
@@ -194,6 +195,7 @@ const {
 
   &__diff {
     overflow-x: auto;
+    max-width: 100%;
   }
 }
 </style>
