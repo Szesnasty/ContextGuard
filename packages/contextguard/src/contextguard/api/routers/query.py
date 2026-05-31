@@ -9,6 +9,7 @@ errors; all decisions live in ``core``.
 
 from __future__ import annotations
 
+import time
 import uuid
 from typing import TYPE_CHECKING, Any
 
@@ -25,6 +26,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from contextguard.api.auth import get_current_user
 from contextguard.api.deps import get_context_guard, get_llm_gateway, get_retriever
+from contextguard.api.metrics import record_guard_metrics
 from contextguard.retrieval.prompt import build_prompt
 
 if TYPE_CHECKING:
@@ -83,7 +85,9 @@ def query(
             detail={"error": "retrieval unavailable", "trace_id": trace_id},
         ) from exc
 
+    started = time.perf_counter()
     guarded = guard.guard(user, request.query, [_to_chunk(h) for h in hits])
+    record_guard_metrics(guarded, latency_seconds=time.perf_counter() - started)
     messages = build_prompt(request.query, guarded.allowed_chunks)
 
     try:

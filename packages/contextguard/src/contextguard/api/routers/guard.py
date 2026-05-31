@@ -15,6 +15,7 @@ blocks is counted into ``cg_cross_tenant_attempts_blocked_total``.
 
 from __future__ import annotations
 
+import time
 import uuid
 from typing import TYPE_CHECKING
 
@@ -24,7 +25,7 @@ from fastapi import APIRouter, Depends
 
 from contextguard.api.auth import get_current_user
 from contextguard.api.deps import get_scan_guard
-from contextguard.api.metrics import cross_tenant_attempts_blocked
+from contextguard.api.metrics import cross_tenant_attempts_blocked, record_guard_metrics
 
 if TYPE_CHECKING:
     from contextguard.core import ContextGuard
@@ -45,7 +46,9 @@ def guard_scan(
     log = logger.bind(trace_id=trace_id, tenant=user.tenant, sub=user.sub)
     log.info("guard.received", candidates=len(request.candidate_chunks))
 
+    started = time.perf_counter()
     guarded = guard.guard(user, request.query, list(request.candidate_chunks))
+    record_guard_metrics(guarded, latency_seconds=time.perf_counter() - started)
 
     blocked_ids = {d.chunk_id for d in guarded.decisions if d.outcome == Outcome.BLOCKED}
     cross_tenant_blocked = sum(

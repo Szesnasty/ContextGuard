@@ -57,4 +57,26 @@ class JsonlEvidenceSink:
         return self._last
 
 
-__all__ = ["EvidenceSink", "JsonlEvidenceSink"]
+# Keys that legitimately differ between two runs of the same input: a fresh
+# ``query_id`` and wall-clock ``created_at``. Everything else - decisions,
+# metrics, fired policies, user, query, schema - must be identical for a replay
+# to be deterministic (ADR-003 / ADR-006).
+_VOLATILE_KEYS = ("query_id", "created_at")
+
+
+def decision_view(record: dict[str, object]) -> dict[str, object]:
+    """Return ``record`` without volatile fields - the part that must replay equal."""
+    return {k: v for k, v in record.items() if k not in _VOLATILE_KEYS}
+
+
+def replay_matches(stored: dict[str, object], recomputed: dict[str, object]) -> bool:
+    """Whether two evidence records encode the same decision (ignoring id/time).
+
+    The determinism contract behind ``cg_replay_mismatch_total``: re-running the
+    same input must reproduce the same decision view, or a non-deterministic
+    dependency reached core.
+    """
+    return decision_view(stored) == decision_view(recomputed)
+
+
+__all__ = ["EvidenceSink", "JsonlEvidenceSink", "decision_view", "replay_matches"]
