@@ -1,9 +1,8 @@
 # Demo identities for the seed corpus.
 #
-# These map onto `UserContext` (sub, tenant, role, purpose). They are defined
-# here now (build plan step 02-baseline-rag/01-seed-corpus.md item 4) and are
-# consumed for real by the policy layer / JWT stub in Milestone B3. The
-# `test_users_yaml_schema` test asserts every entry validates as a UserContext.
+# These map onto `UserContext` (sub, tenant, role, purpose) and are consumed by
+# the policy layer and dev JWT stub. The `test_users_yaml_schema` test asserts
+# every entry validates as a UserContext.
 
 users:
   - sub: sales@acme

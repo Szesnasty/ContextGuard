@@ -1,4 +1,4 @@
-"""Corpus-shape tests (Milestone B1.1, build plan step 02-baseline-rag/01).
+"""Corpus-shape tests for the planted-leak demo corpus.
 
 These assert the planted-leak corpus is well-formed and that MANIFEST.md,
 users.yaml, and leak_queries.yaml agree with the files on disk. Pure, zero-infra:

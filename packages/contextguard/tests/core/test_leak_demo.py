@@ -1,14 +1,11 @@
-"""The headline leak demo — the same scenario, inverted (Milestone A5).
+"""The headline leak demo — the same scenario, inverted.
 
-This is the artifact the whole product narrative rests on (build plan §6a item
-4): with **no policy** a naive RAG leaks a chunk that should never reach the
-model; with the shipped policy on, the *same* call blocks it. Both halves run
-in-memory with zero infra.
+This is the artifact the whole product narrative rests on: with **no policy** a
+naive RAG leaks a chunk that should never reach the model; with the shipped
+policy on, the *same* call blocks it. Both halves run in-memory with zero infra.
 
-Phase-4 inversion note: the "blocked" half here is the counterpart the phase-4
-library slice (`test_guard_policy.py`) already proved per-rule. This file keeps
-the before/after side by side so the regression guards the *narrative*, not just
-the enforcement.
+This file keeps the before/after side by side so the regression guards the
+*narrative*, not just the enforcement.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 {
   "name": "@contextguard/contracts",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Generated TS types for the ContextGuard evidence/policy contracts",
   "scripts": {

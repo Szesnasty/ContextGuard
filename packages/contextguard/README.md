@@ -9,8 +9,9 @@ database, no network, and no model calls (ADR-010). Heavier capabilities
 
 ## Local Install
 
-Public package release is planned after the first external release packaging
-pass. Inside this workspace, use the root development environment:
+ContextGuard 1.0.0 is available as a GitHub source release. Public package
+publication is planned after the package naming and distribution pass. Inside
+this workspace, use the root development environment:
 
 ```bash
 uv sync --frozen --all-packages

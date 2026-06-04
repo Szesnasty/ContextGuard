@@ -24,7 +24,7 @@ from .models import (
     UserContext,
 )
 
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "EVIDENCE_SCHEMA_VERSION",

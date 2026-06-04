@@ -160,7 +160,7 @@ def test_no_heavy_imports() -> None:
 def test_public_top_level_import() -> None:
     """`from contextguard import ContextGuard` works and stays zero-infra (ADR-013).
 
-    This is the exact entry point the README quickstart and Public v0.1 promise.
+    This is the exact entry point the README quickstart promises.
     Runs in a subprocess so the bare top-level import is measured in isolation.
     """
     import subprocess

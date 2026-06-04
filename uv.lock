@@ -112,7 +112,7 @@ wheels = [
 
 [[package]]
 name = "contextguard"
-version = "0.0.0"
+version = "1.0.0"
 source = { editable = "packages/contextguard" }
 dependencies = [
     { name = "contextguard-contracts" },
@@ -178,7 +178,7 @@ provides-extras = ["api", "pgvector", "embeddings", "llm", "rerank", "ingest", "
 
 [[package]]
 name = "contextguard-contracts"
-version = "0.0.0"
+version = "1.0.0"
 source = { editable = "packages/contracts" }
 dependencies = [
     { name = "pydantic" },
@@ -189,7 +189,7 @@ requires-dist = [{ name = "pydantic", specifier = ">=2.7" }]
 
 [[package]]
 name = "contextguard-eval-harness"
-version = "0.0.0"
+version = "1.0.0"
 source = { editable = "packages/eval-harness" }
 dependencies = [
     { name = "contextguard" },
@@ -210,7 +210,7 @@ requires-dist = [
 
 [[package]]
 name = "contextguard-policy-dsl"
-version = "0.0.0"
+version = "1.0.0"
 source = { editable = "packages/policy-dsl" }
 dependencies = [
     { name = "pydantic" },
@@ -225,7 +225,7 @@ requires-dist = [
 
 [[package]]
 name = "contextguard-workspace"
-version = "0.0.0"
+version = "1.0.0"
 source = { virtual = "." }
 
 [package.dev-dependencies]

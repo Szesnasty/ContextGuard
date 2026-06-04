@@ -4,7 +4,6 @@ The corpus lives under ``data/red-team-corpora/*.yaml``; each file holds one or
 more *cases*, and each case is one attack against the firewall that ships with
 its **expected decision** (the golden label) per chunk. A security reviewer reads
 these as data (YAML), not Python, and the golden label is what turns the harness
-([build plan 6.2](../../../../docs/plan/06-red-team-and-evals/02-red-team-harness.md))
 into a regression gate rather than a smoke test.
 
 This module is **zero-infra** — it reads files and parses ``pyyaml``, nothing

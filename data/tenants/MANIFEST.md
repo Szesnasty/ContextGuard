@@ -1,10 +1,8 @@
 # Seed corpus manifest
 
-> Source of truth for the planted-leak demo (build plan step
-> [02-baseline-rag/01-seed-corpus.md](../../docs/plan/02-baseline-rag/01-seed-corpus.md)).
-> Each document carries the same metadata in its YAML frontmatter; this table is
-> the human-readable index. The `test_manifest_*` tests assert that this table
-> and the files on disk agree.
+Each document carries the same metadata in its YAML frontmatter; this table is
+the human-readable index for the planted-leak demo corpus. The
+`test_manifest_*` tests assert that this table and the files on disk agree.
 
 Classifications are the `Classification` enum values: `public`, `internal`,
 `confidential`, `restricted`.

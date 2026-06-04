@@ -1,6 +1,6 @@
 [project]
 name = "contextguard-workspace"
-version = "0.0.0"
+version = "1.0.0"
 description = "ContextGuard monorepo root (uv workspace anchor)"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.13"

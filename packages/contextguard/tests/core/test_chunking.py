@@ -1,4 +1,4 @@
-"""FixedSizeChunker tests (Milestone B1.2, build plan step 02-baseline-rag/02).
+"""FixedSizeChunker tests.
 
 Pure, zero-infra: no DB, no network. Covers determinism, overlap, size bound,
 metadata inheritance, stable ids, and small/empty edge cases.

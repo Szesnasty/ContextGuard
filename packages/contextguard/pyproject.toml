@@ -1,6 +1,6 @@
 [project]
 name = "contextguard"
-version = "0.0.0"
+version = "1.0.0"
 description = "Policy-aware context firewall for production RAG — zero-infra Python library (Tier B)."
 readme = "README.md"
 license = "Apache-2.0"

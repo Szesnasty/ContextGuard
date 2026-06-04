@@ -1,6 +1,6 @@
 [project]
 name = "contextguard-policy-dsl"
-version = "0.0.0"
+version = "1.0.0"
 description = "ContextGuard policy DSL parser/evaluator (zero-infra core)"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.13"

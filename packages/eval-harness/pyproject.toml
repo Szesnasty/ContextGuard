@@ -1,6 +1,6 @@
 [project]
 name = "contextguard-eval-harness"
-version = "0.0.0"
+version = "1.0.0"
 description = "ContextGuard evaluation + red-team harness"
 license = "Apache-2.0"
 requires-python = ">=3.12,<3.13"

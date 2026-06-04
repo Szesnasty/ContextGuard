@@ -78,10 +78,10 @@ fmt: ## Format Python + JS
 demo: ## Run the demo flow
 	$(UV_RUN) python scripts/demo.py
 
-leak-demo: ## Print the before/after leak report (zero-infra, Public v0.1)
+leak-demo: ## Print the before/after leak report (zero-infra)
 	$(UV_RUN) python scripts/leak_demo.py
 
-benchmark: ## Regenerate BENCHMARK.md from the Public v0.1 scenarios (zero-infra)
+benchmark: ## Regenerate BENCHMARK.md from the committed scenarios (zero-infra)
 	$(UV_RUN) python scripts/benchmark.py
 
 red-team: ## Run the red-team corpus through the firewall and regenerate RED-TEAM.md (zero-infra)

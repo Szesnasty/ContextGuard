@@ -17,6 +17,12 @@ ContextGuard asks:
 
 > Was this user allowed to retrieve this context, and can we prove it?
 
+Use it when:
+
+- your RAG system uses private, internal, or multi-tenant data,
+- you need per-chunk `allow`, `redact`, and `block` decisions,
+- you need evidence for why context reached the model.
+
 ---
 
 ## Why It Exists
@@ -51,7 +57,8 @@ ContextGuard is designed around two usage modes:
 1. **Core library** - a zero-infra Python guard that takes `UserContext`, a
    query, and candidate chunks, then returns allowed, redacted, and blocked
    chunks plus an evidence record. This is the primary product surface. Public
-   package release is planned after the first external release packaging pass.
+   package publication is planned after the package naming and distribution
+   pass.
 2. **Local demo stack** - a reference RAG system with FastAPI, pgvector, Ollama,
    and a Vue dashboard, used to demonstrate policy-aware retrieval, evidence,
    and leak prevention end to end.
@@ -88,7 +95,7 @@ PII is masked, and every enforced decision points back to a policy rule.
 
 The core is designed to run as a Python library. It works inside this repo
 without Docker, a database, a model, or network access. A public package release
-is planned after the external release packaging pass.
+is planned after the package naming and distribution pass.
 
 ```python
 from contextguard import ContextGuard
@@ -304,10 +311,13 @@ flowchart TB
     Compose["compose.yaml<br/>Postgres, Redis, Ollama, Langfuse"] --> API
 ```
 
-## Policy Example
+## Policy Examples
 
 Policies are declarative YAML. Rules are evaluated by priority. The first match
 wins; if no rule matches, the `default_effect` applies.
+
+The demo policy is permissive by default so the planted examples are easy to
+compare:
 
 ```yaml
 version: 1
@@ -338,6 +348,30 @@ rules:
       - { field: chunk.pii_count, op: gte, value: 1 }
 ```
 
+For a production-style posture, start deny-by-default and add explicit allow
+rules after stricter deny/redact rules:
+
+```yaml
+version: 1
+default_effect: deny
+
+rules:
+  - id: tenant-isolation
+    effect: deny
+    priority: 100
+    when:
+      - { field: chunk.tenant, op: neq, ref: user.tenant }
+
+  - id: allow-safe-context
+    effect: allow
+    priority: 10
+    when:
+      - { field: chunk.tenant, op: eq, ref: user.tenant }
+```
+
+See [`data/policies/example.yaml`](data/policies/example.yaml) and
+[`data/policies/strict.yaml`](data/policies/strict.yaml).
+
 ## Proof Points
 
 The current benchmark and red-team reports are deterministic. They do not use an
@@ -345,8 +379,8 @@ LLM judge.
 
 | Artifact | Result |
 |---|---|
-| `make test` | 304 Python tests + 11 frontend tests passed |
-| `make lint` | Python lint clean; frontend has known `v-html` warnings |
+| `make test` | 336 Python tests + 18 frontend tests passed |
+| `make lint` | Python and frontend lint clean |
 | `make types` | mypy + Vue typecheck passed |
 | `make benchmark` | on the planted demo corpus: policy off 100% leak rate, policy on 0% leak rate |
 | `make red-team` | on the committed adversarial corpus: 6/6 cases passed, 0% leak rate, 0 replay mismatches |
@@ -396,18 +430,22 @@ ContextGuard is not:
 │   └── eval-harness/            # benchmarks and red-team runner
 ├── data/
 │   ├── tenants/                 # planted demo corpus
-│   ├── policies/                # example policy
+│   ├── policies/                # demo + strict policies
 │   └── red-team-corpora/        # golden adversarial cases
 ├── docs/
-│   └── plan/                    # build plan
+│   └── img/                     # README screenshots
 ├── compose.yaml                 # local stack
+├── CHANGELOG.md                 # release notes
+├── CONTRIBUTING.md              # contribution guide
+├── ROADMAP.md                   # next milestones
+├── SECURITY.md                  # vulnerability reporting scope
 ├── Makefile                     # canonical dev/demo commands
 └── README.md
 ```
 
 ## Status
 
-ContextGuard is an early MVP/demo, built in the open. The current version is
+ContextGuard 1.0.0 is the first official MVP release, built in the open. It is
 ready to demonstrate the product thesis locally:
 
 - policy-aware context filtering,

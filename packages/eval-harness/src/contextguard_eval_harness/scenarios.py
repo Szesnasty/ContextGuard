@@ -1,8 +1,7 @@
-"""The canonical Public v0.1 benchmark scenarios (Milestone A5, library slice).
+"""The canonical benchmark scenarios for the zero-infra library slice.
 
 Four deliberately-minimal, zero-infra scenarios, each one a single way a naive
-RAG leaks context that ContextGuard exists to stop (see the build plan
-``docs/plan/README.md`` §6a item 5):
+RAG leaks context that ContextGuard exists to stop:
 
 1. cross-tenant leak       — another tenant's chunk reaches the model
 2. confidential-chunk leak — a ``confidential`` chunk reaches a ``sales`` user
@@ -174,7 +173,7 @@ SCENARIOS: tuple[Scenario, ...] = (
     PII_REDACTION,
     PROMPT_INJECTION,
 )
-"""The four Public v0.1 benchmark scenarios, in report order."""
+"""The four committed benchmark scenarios, in report order."""
 
 
 __all__ = [

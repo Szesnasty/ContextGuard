@@ -1,0 +1,55 @@
+# Production-style ContextGuard policy example.
+#
+# This example is intentionally stricter than `example.yaml`: it is
+# deny-by-default and only allows chunks that pass explicit tenant, role,
+# classification, PII, secret, and injection checks.
+version: 1
+default_effect: deny
+
+roles:
+  manager:
+    inherits: [sales]
+
+rules:
+  - id: tenant-isolation
+    description: A user may never see another tenant's chunks.
+    effect: deny
+    priority: 100
+    when:
+      - { field: chunk.tenant, op: neq, ref: user.tenant }
+
+  - id: block-injection
+    description: Drop chunks carrying a high-confidence prompt-injection payload.
+    effect: deny
+    priority: 90
+    when:
+      - { field: chunk.risk_score, op: gte, value: 0.8 }
+
+  - id: sales-no-confidential
+    description: The sales role cannot access confidential or higher classifications.
+    effect: deny
+    priority: 80
+    when:
+      - { field: user.roles, op: contains, value: sales }
+      - { field: chunk.classification, op: gte, value: confidential }
+
+  - id: redact-secrets
+    description: Mask any chunk the detectors flagged as carrying a secret.
+    effect: redact
+    priority: 70
+    when:
+      - { field: chunk.secret_count, op: gte, value: 1 }
+
+  - id: redact-pii
+    description: Mask any chunk the detectors flagged as carrying PII.
+    effect: redact
+    priority: 60
+    when:
+      - { field: chunk.pii_count, op: gte, value: 1 }
+
+  - id: allow-safe-context
+    description: Allow same-tenant chunks that did not trigger a stricter rule.
+    effect: allow
+    priority: 10
+    when:
+      - { field: chunk.tenant, op: eq, ref: user.tenant }

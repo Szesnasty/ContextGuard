@@ -1,8 +1,8 @@
-"""Red-team corpus-shape tests (Milestone B5.1, build plan 06/01).
+"""Red-team corpus-shape tests.
 
 These assert the declarative red-team corpus is well-formed and that each case is
 a genuine attack carrying a golden decision. Pure, zero-infra: they read files
-and parse YAML, nothing heavier — no guard is run here (that is B5.2).
+and parse YAML, nothing heavier.
 """
 
 from __future__ import annotations

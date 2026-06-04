@@ -13,7 +13,7 @@ from contextguard_policy_dsl.schema import (
     Rule,
 )
 
-__version__ = "0.0.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "CLASSIFICATION_ORDER",
