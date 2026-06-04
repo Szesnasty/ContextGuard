@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/Szesnasty/ContextGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Szesnasty/ContextGuard/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/Szesnasty/ContextGuard?sort=semver)](https://github.com/Szesnasty/ContextGuard/releases/latest)
-[![License](https://img.shields.io/github/license/Szesnasty/ContextGuard)](LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
 **A context firewall for RAG systems.**
 
