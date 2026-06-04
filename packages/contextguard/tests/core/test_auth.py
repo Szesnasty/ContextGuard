@@ -26,9 +26,12 @@ def test_issue_then_decode_round_trips() -> None:
 
 def test_tampered_token_fails_verification() -> None:
     token = issue_token(_user(), secret="s3cret")
-    # Flip a character in the signature segment.
+    # Flip a non-padding character in the signature segment. The last base64url
+    # character can carry unused padding bits for HS256 and may decode to the
+    # same bytes after mutation.
     head, payload, sig = token.split(".")
-    tampered = f"{head}.{payload}.{sig[:-1]}{'A' if sig[-1] != 'A' else 'B'}"
+    tampered_sig = f"{'A' if sig[0] != 'A' else 'B'}{sig[1:]}"
+    tampered = f"{head}.{payload}.{tampered_sig}"
     with pytest.raises(AuthError):
         decode_token(tampered, secret="s3cret")
 
