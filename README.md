@@ -56,6 +56,34 @@ ContextGuard is designed around two usage modes:
    and a Vue dashboard, used to demonstrate policy-aware retrieval, evidence,
    and leak prevention end to end.
 
+## Product Tour
+
+The dashboard shows the security boundary in plain sight: retrieval can find a
+chunk, but policy decides whether that chunk may reach the model for this
+identity.
+
+### RAG Console
+
+![RAG Console showing a support identity, a cross-tenant prompt, and allowed/redacted/blocked source counts.](docs/img/rag-console-cross-tenant.png)
+
+Ask a normal RAG question and see the context firewall summarize what happened:
+how many sources were allowed, redacted, or blocked before the answer was
+generated.
+
+### Evidence Decision Flow
+
+![Evidence Viewer showing retrieved chunks passing through the policy gate into allowed, redacted, blocked, and prompt outcomes.](docs/img/evidence-decision-flow.png)
+
+Replay a query as an evidence record. The flow makes the invariant visible:
+retrieved chunks pass through a policy gate before the prompt is assembled.
+
+### Context Delta And Enforced Decisions
+
+![Evidence Viewer showing context withheld from the model and the policy decisions behind each blocked or redacted chunk.](docs/img/context-delta-enforced-decisions.png)
+
+Inspect the exact context delta: withheld chunks are shown separately, redacted
+PII is masked, and every enforced decision points back to a policy rule.
+
 ## Core Library Quickstart
 
 The core is designed to run as a Python library. It works inside this repo
@@ -171,24 +199,6 @@ Then run:
 ```bash
 API_BASE=http://127.0.0.1:8008 make e2e
 ```
-
-## Product Tour
-
-The local dashboard is the fastest way to see the product shape: ask a normal
-RAG question, then inspect which retrieved sources were allowed, redacted, or
-blocked before the prompt was assembled.
-
-### RAG Console
-
-![RAG Console showing a support identity, a cross-tenant prompt, and allowed/redacted/blocked source counts.](docs/img/rag-console-cross-tenant.png)
-
-### Evidence Decision Flow
-
-![Evidence Viewer showing retrieved chunks passing through the policy gate into allowed, redacted, blocked, and prompt outcomes.](docs/img/evidence-decision-flow.png)
-
-### Context Delta And Enforced Decisions
-
-![Evidence Viewer showing context withheld from the model and the policy decisions behind each blocked or redacted chunk.](docs/img/context-delta-enforced-decisions.png)
 
 ## What The Demo Shows
 
