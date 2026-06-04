@@ -15,6 +15,14 @@ export default defineConfig(
     },
   },
   {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+      },
+    },
+  },
+  {
     files: ["src/components/SanitizedHtml.vue"],
     rules: {
       "vue/no-v-html": "off",
