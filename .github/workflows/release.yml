@@ -61,7 +61,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            dist/python/*
+            dist/python/*.whl
+            dist/python/*.tar.gz
             dist/release/contextguard-web.tar.gz
           generate_release_notes: true
 
@@ -71,6 +72,7 @@ jobs:
         with:
           name: release-artifacts
           path: |
-            dist/python/*
+            dist/python/*.whl
+            dist/python/*.tar.gz
             dist/release/contextguard-web.tar.gz
           if-no-files-found: error
