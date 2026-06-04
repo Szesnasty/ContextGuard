@@ -60,6 +60,7 @@ def main() -> int:
     try:
         _run(["docker", "compose", "up", "-d", "--wait"], env=env)
         _run([sys.executable, "scripts/seed.py"], env=env)
+        _run(["pnpm", "--filter", "@contextguard/web", "run", "copy:reports"], env=env)
     except FileNotFoundError as exc:
         print(f"demo: missing executable: {exc.filename}", file=sys.stderr)
         return 127
@@ -85,8 +86,8 @@ def main() -> int:
             "pnpm",
             "--filter",
             "@contextguard/web",
-            "dev",
-            "--",
+            "exec",
+            "vite",
             "--host",
             "127.0.0.1",
             "--port",
