@@ -51,8 +51,7 @@ ContextGuard is designed around two usage modes:
 1. **Core library** - a zero-infra Python guard that takes `UserContext`, a
    query, and candidate chunks, then returns allowed, redacted, and blocked
    chunks plus an evidence record. This is the primary product surface. Public
-   package release is planned after the first external release and license
-   decision.
+   package release is planned after the first external release packaging pass.
 2. **Local demo stack** - a reference RAG system with FastAPI, pgvector, Ollama,
    and a Vue dashboard, used to demonstrate policy-aware retrieval, evidence,
    and leak prevention end to end.
@@ -61,7 +60,7 @@ ContextGuard is designed around two usage modes:
 
 The core is designed to run as a Python library. It works inside this repo
 without Docker, a database, a model, or network access. A public package release
-is planned after the external release and license decision.
+is planned after the external release packaging pass.
 
 ```python
 from contextguard import ContextGuard
@@ -385,10 +384,12 @@ template. Real production use would still need hardened identity, connector-leve
 ACL mapping, retention policy, deployment hardening, and a fuller security
 review.
 
+## License
+
+ContextGuard is licensed under the Apache License 2.0. See [LICENSE](LICENSE).
+
 ## Legal
 
 ContextGuard is not legal advice and does not by itself make a system compliant
 with GDPR, the EU AI Act, DORA, or any other regime. It is an engineering control
 and evidence layer intended to support stronger AI data-flow governance.
-
-License: to be decided before first external release.

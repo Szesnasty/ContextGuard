@@ -9,8 +9,8 @@ database, no network, and no model calls (ADR-010). Heavier capabilities
 
 ## Local Install
 
-Public package release is planned after the external release and license
-decision. Inside this workspace, use the root development environment:
+Public package release is planned after the first external release packaging
+pass. Inside this workspace, use the root development environment:
 
 ```bash
 uv sync --frozen --all-packages
@@ -38,3 +38,7 @@ print(guard.last_evidence())                  # structured audit record (dict)
 
 **ContextGuard does not guess permissions.** It enforces your policy against the
 `UserContext` you pass in — map your own auth onto it.
+
+## License
+
+Apache License 2.0. See the repository-root `LICENSE` file.
