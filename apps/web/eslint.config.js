@@ -4,7 +4,7 @@ import { defineConfig, createConfig } from "@vue/eslint-config-typescript";
 
 export default defineConfig(
   {
-    ignores: ["dist/**", "node_modules/**", "src/api/schema.d.ts"],
+    ignores: ["dist/**", "node_modules/**", "**/.vite/**", "src/api/schema.d.ts"],
   },
   eslint.configs.recommended,
   ...vue.configs["flat/recommended"],

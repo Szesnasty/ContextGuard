@@ -15,10 +15,15 @@ import subprocess
 import sys
 import time
 from collections.abc import Sequence
+from urllib.parse import quote
 
+_HOST = "127.0.0.1"
 DEFAULT_API_PORT = "8000"
 DEFAULT_WEB_PORT = "5173"
-_HOST = "127.0.0.1"
+DEFAULT_POSTGRES_PORT = "5432"
+DEFAULT_REDIS_PORT = "6379"
+DEFAULT_LANGFUSE_PORT = "3001"
+DEFAULT_OLLAMA_PORT = "11434"
 
 
 def _run(cmd: Sequence[str], *, env: dict[str, str] | None = None) -> None:
@@ -32,12 +37,21 @@ def _spawn(cmd: Sequence[str], *, env: dict[str, str] | None = None) -> subproce
 
 
 def _port_is_free(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        try:
-            sock.bind((_HOST, port))
-        except OSError:
-            return False
+    checks = (
+        (socket.AF_INET, _HOST),
+        (socket.AF_INET, "0.0.0.0"),  # noqa: S104 - bind probe only; no server listens here.
+        (socket.AF_INET6, "::1"),
+        (socket.AF_INET6, "::"),
+    )
+    for family, host in checks:
+        with socket.socket(family, socket.SOCK_STREAM) as sock:
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            if family == socket.AF_INET6:
+                sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 1)
+            try:
+                sock.bind((host, port))
+            except OSError:
+                return False
     return True
 
 
@@ -49,6 +63,47 @@ def _choose_port(requested: str, *, label: str) -> str:
                 print(f"demo: {label} port {start} is busy; using {port}", flush=True)
             return str(port)
     raise RuntimeError(f"no free {label} port found in range {start}-{start + 49}")
+
+
+def _compose_host_port(env: dict[str, str], *, service: str, container_port: int) -> str | None:
+    try:
+        result = subprocess.run(  # noqa: S603 - fixed local Docker Compose probe.
+            ["docker", "compose", "port", service, str(container_port)],  # noqa: S607
+            check=False,
+            capture_output=True,
+            env=env,
+            text=True,
+        )
+    except FileNotFoundError:
+        return None
+    if result.returncode != 0:
+        return None
+    for line in result.stdout.splitlines():
+        port = line.rsplit(":", 1)[-1].strip()
+        if port.isdigit():
+            return port
+    return None
+
+
+def _compose_or_free_port(
+    env: dict[str, str],
+    *,
+    service: str,
+    container_port: int,
+    requested: str,
+    label: str,
+) -> str:
+    existing = _compose_host_port(env, service=service, container_port=container_port)
+    if existing is not None:
+        return existing
+    return _choose_port(requested, label=label)
+
+
+def _database_url(env: dict[str, str], *, postgres_port: str) -> str:
+    user = quote(env.get("POSTGRES_USER", "contextguard"), safe="")
+    password = quote(env.get("POSTGRES_PASSWORD", "contextguard"), safe="")
+    database = quote(env.get("POSTGRES_DB", "contextguard"), safe="")
+    return f"postgresql://{user}:{password}@localhost:{postgres_port}/{database}"
 
 
 def _wait_http(
@@ -79,8 +134,35 @@ def main() -> int:
     env.setdefault("EVIDENCE_SINK", "postgres")
     env.setdefault("OLLAMA_CHAT_MODEL", "llama3.2:3b")
     env.setdefault("OLLAMA_EMBED_MODEL", "nomic-embed-text")
-    env.setdefault("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
     try:
+        postgres_port = _compose_or_free_port(
+            env,
+            service="postgres",
+            container_port=5432,
+            requested=env.get("POSTGRES_PORT", DEFAULT_POSTGRES_PORT),
+            label="Postgres",
+        )
+        redis_port = _compose_or_free_port(
+            env,
+            service="redis",
+            container_port=6379,
+            requested=env.get("REDIS_PORT", DEFAULT_REDIS_PORT),
+            label="Redis",
+        )
+        langfuse_port = _compose_or_free_port(
+            env,
+            service="langfuse",
+            container_port=3000,
+            requested=env.get("LANGFUSE_PORT", DEFAULT_LANGFUSE_PORT),
+            label="Langfuse",
+        )
+        ollama_port = _compose_or_free_port(
+            env,
+            service="ollama",
+            container_port=11434,
+            requested=env.get("OLLAMA_PORT", DEFAULT_OLLAMA_PORT),
+            label="Ollama",
+        )
         api_port = _choose_port(env.get("API_PORT", DEFAULT_API_PORT), label="API")
         web_port = _choose_port(env.get("WEB_PORT", DEFAULT_WEB_PORT), label="dashboard")
     except ValueError as exc:
@@ -91,6 +173,13 @@ def main() -> int:
         return 2
     api_url = f"http://{_HOST}:{api_port}"
     web_url = f"http://{_HOST}:{web_port}"
+    env["POSTGRES_PORT"] = postgres_port
+    env["REDIS_PORT"] = redis_port
+    env["LANGFUSE_PORT"] = langfuse_port
+    env["OLLAMA_PORT"] = ollama_port
+    env["DATABASE_URL"] = _database_url(env, postgres_port=postgres_port)
+    env["REDIS_URL"] = f"redis://localhost:{redis_port}/0"
+    env["OLLAMA_BASE_URL"] = f"http://{_HOST}:{ollama_port}"
     env["API_PORT"] = api_port
     env["WEB_PORT"] = web_port
     env["VITE_API_PROXY"] = api_url
