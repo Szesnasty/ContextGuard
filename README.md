@@ -352,7 +352,7 @@ ContextGuard is not:
 ```text
 .
 ├── apps/
-│   └── web/                     # Vue dashboard
+│   └── web/                     # Vue dashboard + frontend README
 ├── packages/
 │   ├── contextguard/            # Python core, API adapter, retrieval, evidence
 │   ├── contracts/               # Pydantic contracts + JSON Schemas + OpenAPI
