@@ -1,5 +1,9 @@
 # ContextGuard
 
+[![CI](https://github.com/Szesnasty/ContextGuard/actions/workflows/ci.yml/badge.svg)](https://github.com/Szesnasty/ContextGuard/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Szesnasty/ContextGuard?sort=semver)](https://github.com/Szesnasty/ContextGuard/releases/latest)
+[![License](https://img.shields.io/github/license/Szesnasty/ContextGuard)](LICENSE)
+
 **A context firewall for RAG systems.**
 
 ContextGuard sits between retrieval and generation. It decides which chunks are
@@ -62,6 +66,26 @@ ContextGuard is designed around two usage modes:
 2. **Local demo stack** - a reference RAG system with FastAPI, pgvector, Ollama,
    and a Vue dashboard, used to demonstrate policy-aware retrieval, evidence,
    and leak prevention end to end.
+
+## Latest Release
+
+The latest stable source release is
+[`v1.0.0`](https://github.com/Szesnasty/ContextGuard/releases/tag/v1.0.0).
+The default branch tracks current development; versioned tags are the stable
+snapshots.
+
+Until the Python packages are published to a public package index, install the
+1.0.0 wheels from the GitHub release:
+
+```bash
+uv venv
+uv pip install \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard_contracts-1.0.0-py3-none-any.whl \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard_policy_dsl-1.0.0-py3-none-any.whl \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard-1.0.0-py3-none-any.whl
+```
+
+For the full local demo, clone the repository and use `make demo`.
 
 ## Product Tour
 

@@ -10,8 +10,19 @@ database, no network, and no model calls (ADR-010). Heavier capabilities
 ## Local Install
 
 ContextGuard 1.0.0 is available as a GitHub source release. Public package
-publication is planned after the package naming and distribution pass. Inside
-this workspace, use the root development environment:
+publication is planned after the package naming and distribution pass.
+
+Install the current release wheels directly from GitHub:
+
+```bash
+uv venv
+uv pip install \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard_contracts-1.0.0-py3-none-any.whl \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard_policy_dsl-1.0.0-py3-none-any.whl \
+  https://github.com/Szesnasty/ContextGuard/releases/download/v1.0.0/contextguard-1.0.0-py3-none-any.whl
+```
+
+Inside this workspace, use the root development environment:
 
 ```bash
 uv sync --frozen --all-packages
