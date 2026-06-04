@@ -1,14 +1,9 @@
-// Domain operations over the typed client. These wrap the two API calls the
-// dashboard's firewall story needs:
+// Domain operations over the typed client. The Query Console primarily uses
+// /v1/query, which returns the model answer plus the guard's verdict. The
+// scan-only /v1/guard wrapper remains available for tools that already hold
+// candidate chunks and want a firewall decision without generation.
 //
-//   1. /v1/query  - full RAG: retrieval + model answer. Deliberately a
-//      pass-through guard, so this is the *pre-firewall* (leaky) baseline.
-//   2. /v1/guard  - scan-only: adjudicate the supplied chunks against the
-//      active policy. This is the firewall verdict (allowed/blocked/redacted).
-//
-// The console runs (1) to get retrieval + answer, then feeds those chunks into
-// (2) to show what the firewall does to them. No identity is sent in the body
-// (ADR-015); the token carries it.
+// No identity is sent in request bodies (ADR-015); the Bearer token carries it.
 import { api, describeError } from "./client";
 import type { Chunk, GuardedContext, QueryResponse, RetrievedChunk } from "./types";
 import type {

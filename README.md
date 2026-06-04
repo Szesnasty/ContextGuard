@@ -1,111 +1,358 @@
 # ContextGuard
 
-> **An open-source context firewall for production RAG.**
-> It enforces access policies before documents reach the LLM, and produces replayable, audit-ready evidence for every query.
+**A context firewall for RAG systems.**
 
-Most RAG systems answer: *"Did we retrieve relevant context?"*
-ContextGuard answers: **"Were we allowed to retrieve this context — and can we prove it?"**
+ContextGuard sits between retrieval and generation. It decides which chunks are
+allowed to reach the model, which must be redacted, which must be blocked, and
+why. Every decision becomes evidence you can inspect, replay, and test.
+
+Most RAG systems ask:
+
+> Did we retrieve relevant context?
+
+ContextGuard asks:
+
+> Was this user allowed to retrieve this context, and can we prove it?
 
 ---
 
-## The problem
+## Why It Exists
 
-Companies are deploying RAG and AI agents on top of their internal data — contracts, tickets, HR files, customer records, source code. The retrieval layer is usually built for **relevance**, not for **control**. That creates four blind spots that show up the moment a real auditor, DPO, or security lead starts asking questions:
+Production RAG is no longer only a relevance problem. Internal assistants now
+retrieve contracts, tickets, HR files, roadmap notes, customer data, source code,
+and tenant-specific knowledge. The retrieval layer is often optimized for
+semantic match, while access control, minimization, and auditability live
+somewhere else.
 
-1. **No access boundary inside the prompt.**
-   The vector store happily returns the most semantically similar chunks, regardless of who is asking. A sales user can end up with finance chunks in their context window. Tenants can bleed into each other. Row-level permissions from the source system are not enforced at retrieval time.
+That creates a sharp failure mode: the vector store can retrieve the right chunk
+for the question, but the wrong chunk for the user.
 
-2. **No data minimization at the prompt boundary.**
-   GDPR-style minimization is usually applied to databases and exports, not to the context window. Models routinely receive 10–20× more text than the answer actually requires — including PII, secrets, and confidential clauses that were never needed to answer the question.
+ContextGuard is the control plane for that boundary:
 
-3. **No explainable decision trail.**
-   When something leaks, teams cannot reconstruct *what was retrieved, what was sent, what was blocked, and why.* There is no per-query evidence record that a security or compliance reviewer can read.
+- **Tenant isolation** - an `acme` user should never receive `contoso` context.
+- **Role and classification policy** - sales can use public/internal docs, but
+  not confidential M&A notes.
+- **Data minimization** - PII and secrets can be masked before prompt assembly.
+- **Indirect injection defense** - poisoned documents are treated as risk
+  signals, not trusted instructions.
+- **Evidence over promises** - each query records what was retrieved, allowed,
+  redacted, blocked, and which policy fired.
 
-4. **No resilience story.**
-   Prompt injection, indirect injection via poisoned documents, and cross-tenant exfiltration attempts are not systematically tested. There is no artifact that says "we ran these adversarial scenarios, here is how the system behaved."
+ContextGuard is not trying to be a better retriever or a smarter model. It is a
+small, explicit enforcement layer around the context window.
 
-These are not theoretical risks. They are the first questions a serious enterprise buyer, internal security review, or EU regulator will ask about any RAG deployment.
+## Demo Quickstart
 
-## What ContextGuard is
+Prerequisites:
 
-ContextGuard sits **between your retriever and your model** as a policy-aware context firewall and evidence layer. For every query, it:
+- Docker Desktop
+- Python 3.12
+- Node 20+
+- `uv`
+- `pnpm`
 
-- **Enforces policy at retrieval time** — user role, tenant, document classification, and source-system permissions are applied *before* top-k selection, not after.
-- **Minimizes the context window** — strips, redacts, or drops chunks that are not necessary to answer the question, and reports tokens-before vs. tokens-after.
-- **Detects sensitive payloads** — PII, secrets, credentials, and classification labels are flagged and handled per policy.
-- **Scores adversarial risk** — chunks that look like injected instructions, role overrides, or exfiltration attempts are surfaced as a risk signal, not silently trusted.
-- **Emits an evidence record** — a structured per-query artifact (`query_id`, user, tenant, retrieved / allowed / blocked / redacted, policies triggered, tokens saved) that can be archived, replayed, and reviewed.
+Run the local demo:
 
-ContextGuard does **not** try to be a smarter retriever, a better model, or an LLM judge at runtime. It is a control plane around the context window.
-
-## Who it is for
-
-- **AI / platform engineers** building internal RAG or agentic systems and getting stuck on access control, multi-tenancy, and audit requirements.
-- **Security teams** that need visibility into what their LLM-facing systems actually send out and receive back.
-- **Compliance, DPO, and risk functions** that need *evidence* — not promises — to demonstrate control over AI data flows under EU AI Act, GDPR, and adjacent regimes.
-
-## Why this, why now
-
-Three forces are converging:
-
-1. **RAG has moved from demo to production**, but production-grade access control, minimization, and auditability have not caught up.
-2. **EU regulation is landing on AI systems** — the AI Act is staged into force, GDPR principles (minimization, integrity, accountability) apply to model inputs whether teams realize it or not, and sector regimes like DORA add explicit resilience-testing expectations.
-3. **The market is full of "AI security" tools that scan prompts** and very few that control **context**. ContextGuard targets the layer most products skip.
-
-> Disclaimer: ContextGuard is not a compliance certification and does not by itself make any system "AI Act compliant" or "GDPR compliant." It is an engineering control and evidence layer designed to support the technical controls and record-keeping that those regimes expect.
-
-## Landscape — why this is not a duplicate
-
-This is a competitive, well-funded space — and that is validation, not a warning. The category exists; what is missing is *this specific combination*. The market splits roughly into four buckets, and ContextGuard deliberately sits in the gap between them:
-
-| Bucket | Examples | What they do | What they skip |
-|---|---|---|---|
-| **LLM / AI firewalls** | Lakera Guard, Protect AI (LLM Guard), Robust Intelligence (Cisco), NVIDIA NeMo Guardrails, Guardrails AI, Prompt Security | Prompt-injection, jailbreak, PII/toxicity, output filtering — **content** controls | They do not ask *"is this user allowed to see this document, in this classification?"* This is content filtering, not access control. |
-| **Access control / authz for RAG** | Oso, Cerbos, Permit.io, Aserto, Pinecone metadata filtering, AWS Bedrock KB filtering, Glean, M365 Copilot | Filter documents by permission at retrieval time | Weak on the **proof**: they return a result, but rarely emit an audit-ready, versioned record of *why*. Enterprise players (Glean/Copilot) do this — but closed, SaaS, paywalled, not offline. |
-| **LLM observability / eval** | Langfuse, Arize Phoenix, LangSmith, RAGAS, Helicone | Tracing, eval, cost | These are ContextGuard's **tools** (see ADR-003), not competitors. |
-| **Data governance / DLP** | Microsoft Purview, BigID, Immuta, Cyera | Govern data at the storage layer | They operate on data-at-rest, not on the RAG query hot path. Complementary, not the same. |
-
-**The white space ContextGuard targets** is the intersection no single self-hosted, open project assembles as a whole:
-
-1. **Policy enforced at the point of retrieval** (`WHERE policy AND vector <-> $1`) — not a content post-filter.
-2. **Evidence record as a versioned contract** (semver, replay-determinism) — a provable artifact, not a log line.
-3. **Regulatory mapping (GDPR / AI Act) + offline-first + framework-agnostic core.**
-
-The honest framing: the big players hold fragments behind a SaaS paywall, and open source has the separate building blocks that nobody has assembled into one coherent, audit-ready product. ContextGuard does not try to out-build Lakera on prompt injection — it owns a narrower corner: **"was this context allowed to be here — and prove it."**
-
-## Core design principles
-
-- **Defense in depth.** No single check is trusted to be perfect. Policy, classification, redaction, and risk scoring are layered.
-- **Enforcement before generation.** Access decisions happen at retrieval time, on chunks, before the prompt is built — not after the model has already seen the data.
-- **No LLM-as-judge at runtime.** Models are not used as the security boundary on the hot path. LLM-based evaluation is reserved for offline evals and red-teaming.
-- **Evidence over claims.** Every decision the system makes is a record you can export, diff, and review.
-- **Tenant isolation is a first-class concept**, not a filter bolted on at the end.
-
-## Repository layout
-
-This repository is a monorepo. It contains the product, the documentation, and the public learning trail behind it.
-
+```bash
+make demo
 ```
+
+The command starts the local stack, prepares the database, seeds the planted
+tenant corpus, starts the FastAPI backend, and starts the Vue dashboard.
+
+Open the dashboard:
+
+```text
+http://localhost:5173
+```
+
+In the dashboard:
+
+1. Generate a dev token for `sales@acme`.
+2. Ask:
+
+```text
+Are we acquiring any company soon, and for how much?
+```
+
+3. Open the sources/evidence drawer.
+4. Look for the confidential acquisition chunk: it may be retrieved, but it is
+   withheld from the model and attributed to the policy rule that blocked it.
+
+Run the fast demo smoke test against a running API:
+
+```bash
+make e2e
+```
+
+If local ports collide with another stack, override them:
+
+```bash
+POSTGRES_PORT=55432 \
+DATABASE_URL=postgresql://contextguard:contextguard@localhost:55432/contextguard \
+REDIS_PORT=6380 \
+REDIS_URL=redis://localhost:6380/0 \
+LANGFUSE_PORT=3002 \
+OLLAMA_PORT=11435 \
+OLLAMA_BASE_URL=http://127.0.0.1:11435 \
+API_PORT=8008 \
+WEB_PORT=5174 \
+make demo
+```
+
+Then run:
+
+```bash
+API_BASE=http://127.0.0.1:8008 make e2e
+```
+
+## What The Demo Shows
+
+The planted demo corpus contains ordinary product/support documents plus
+intentional leak surfaces:
+
+- a confidential `acme` M&A memo,
+- a cross-tenant `contoso` chunk,
+- PII-bearing support text,
+- a secret-bearing runbook chunk,
+- an indirect prompt-injection document.
+
+For a `sales@acme` identity, ContextGuard demonstrates:
+
+- retrieval provenance,
+- per-chunk `allowed`, `redacted`, and `blocked` decisions,
+- token reduction before vs. after the firewall,
+- policy reasons such as `tenant-isolation` and `sales-no-confidential`,
+- a query-level evidence record.
+
+The important security invariant:
+
+**blocked chunk text does not reach the model and is not returned by `/v1/query`
+as raw retrieved text.**
+
+## How It Works
+
+```mermaid
+flowchart LR
+    U["User query + signed identity"] --> A["FastAPI adapter"]
+    A --> R["Retriever<br/>BM25 + pgvector"]
+    R --> C["Candidate chunks"]
+    C --> G["ContextGuard"]
+    G --> P["Allowed / redacted context"]
+    P --> L["LLM"]
+    L --> O["Grounded answer"]
+    G --> E["Evidence record"]
+
+    subgraph Guard["Context firewall"]
+        E1["Enrich<br/>PII, secrets, injection signals"]
+        E2["Policy<br/>tenant, role, classification"]
+        E3["Redact / block / allow"]
+        E1 --> E2 --> E3
+    end
+
+    G --> E1
+    E3 --> P
+```
+
+### Decision Pipeline
+
+```mermaid
+flowchart TD
+    Q["Query"] --> K["Top-k retrieval"]
+    K --> C1["Chunk: public/internal"]
+    K --> C2["Chunk: confidential"]
+    K --> C3["Chunk: cross-tenant"]
+    K --> C4["Chunk: PII/secret/injection"]
+
+    C1 --> A["Allowed"]
+    C2 --> B["Blocked<br/>sales-no-confidential"]
+    C3 --> T["Blocked<br/>tenant-isolation"]
+    C4 --> D["Redacted or blocked<br/>policy-driven risk handling"]
+
+    A --> P["Prompt context"]
+    D --> P
+    B --> X["Withheld from model"]
+    T --> X
+    P --> M["Model answer"]
+
+    A --> EV["Evidence"]
+    B --> EV
+    T --> EV
+    D --> EV
+```
+
+### Repository Architecture
+
+```mermaid
+flowchart TB
+    Web["apps/web<br/>Vue dashboard"] --> API["contextguard.api<br/>FastAPI adapter"]
+    API --> Core["contextguard.core<br/>zero-infra guard"]
+    API --> Retrieval["retrieval<br/>pgvector + BM25"]
+    API --> LLM["llm gateway<br/>Ollama by default"]
+    API --> Metrics["/metrics<br/>Prometheus format"]
+
+    Core --> Contracts["packages/contracts<br/>Pydantic models + JSON Schema"]
+    Core --> Policy["packages/policy-dsl<br/>YAML policy evaluator"]
+    Core --> Evidence["evidence sink<br/>JSONL or Postgres JSONB"]
+
+    Eval["packages/eval-harness<br/>benchmarks + red-team corpus"] --> Core
+    Data["data/<br/>tenants, users, policies, attacks"] --> Retrieval
+    Data --> Eval
+
+    Compose["compose.yaml<br/>Postgres, Redis, Ollama, Langfuse"] --> API
+```
+
+## Library Quickstart
+
+The core library can run without Docker, a database, a model, or network access.
+
+```python
+from contextguard import ContextGuard
+from contextguard.core.types import Chunk, Classification, UserContext
+
+guard = ContextGuard.from_policy("data/policies/example.yaml")
+
+user = UserContext(
+    sub="sales@acme",
+    tenant="acme",
+    role="sales",
+    purpose="support",
+)
+
+chunks = [
+    Chunk(
+        id="public-faq",
+        doc_id="faq",
+        tenant="acme",
+        classification=Classification.PUBLIC,
+        text="Refund requests are handled by support.",
+    ),
+    Chunk(
+        id="secret-mna",
+        doc_id="mna-falcon",
+        tenant="acme",
+        classification=Classification.CONFIDENTIAL,
+        text="Project Falcon acquisition target is Initech for 1.2B.",
+    ),
+]
+
+result = guard.guard(user, "Are we acquiring anyone?", chunks)
+
+print([chunk.id for chunk in result.allowed_chunks])
+print(guard.last_evidence())
+```
+
+## Policy Example
+
+Policies are declarative YAML. Rules are evaluated by priority. The first match
+wins; if no rule matches, the `default_effect` applies.
+
+```yaml
+version: 1
+default_effect: allow
+
+roles:
+  manager:
+    inherits: [sales]
+
+rules:
+  - id: tenant-isolation
+    effect: deny
+    priority: 100
+    when:
+      - { field: chunk.tenant, op: neq, ref: user.tenant }
+
+  - id: sales-no-confidential
+    effect: deny
+    priority: 50
+    when:
+      - { field: user.roles, op: contains, value: sales }
+      - { field: chunk.classification, op: gte, value: confidential }
+
+  - id: redact-pii
+    effect: redact
+    priority: 30
+    when:
+      - { field: chunk.pii_count, op: gte, value: 1 }
+```
+
+## Proof Points
+
+The current benchmark and red-team reports are deterministic. They do not use an
+LLM judge.
+
+| Artifact | Result |
+|---|---|
+| `make test` | 304 Python tests + 11 frontend tests passed |
+| `make lint` | Python lint clean; frontend has known `v-html` warnings |
+| `make types` | mypy + Vue typecheck passed |
+| `make benchmark` | policy off: 100% leak rate, policy on: 0% leak rate |
+| `make red-team` | 6/6 cases passed, 0% leak rate, 0 replay mismatches |
+| `make e2e` | fast local demo smoke test |
+
+See:
+
+- [BENCHMARK.md](BENCHMARK.md)
+- [RED-TEAM.md](RED-TEAM.md)
+
+## What Makes It Different
+
+ContextGuard is not a generic LLM firewall. It focuses on the context boundary:
+
+| Category | Typical focus | ContextGuard focus |
+|---|---|---|
+| LLM firewalls | prompt/output content filtering | what context is allowed before generation |
+| RAG retrieval tools | relevance and ranking | policy-aware retrieval and minimization |
+| Observability tools | traces, cost, evals | evidence as an auditable product contract |
+| Data governance tools | data at rest | RAG query hot path |
+
+The product thesis is narrow on purpose:
+
+**Was this context allowed to be here, and can we prove it?**
+
+## Project Layout
+
+```text
 .
 ├── apps/
-│   ├── api/              # Python backend — retrieval, policy engine, evidence emitter
-│   └── web/              # Vue frontend — query console, policy editor, evidence viewer
-├── packages/             # Shared schemas, policy DSL, evaluation harness
-├── data/                 # Tenant fixtures, sample documents, red-team corpora
+│   └── web/                     # Vue dashboard
+├── packages/
+│   ├── contextguard/            # Python core, API adapter, retrieval, evidence
+│   ├── contracts/               # Pydantic contracts + JSON Schemas + OpenAPI
+│   ├── policy-dsl/              # YAML policy schema and evaluator
+│   └── eval-harness/            # benchmarks and red-team runner
+├── data/
+│   ├── tenants/                 # planted demo corpus
+│   ├── policies/                # example policy
+│   └── red-team-corpora/        # golden adversarial cases
 ├── docs/
-│   └── plan/       # The build plan that underpins every design decision
-├── architecture notes          # Architecture decision records (ADRs)
-└── README.md             # You are here
+│   ├── plan/                    # build plan
+│   └── plan/              # learning trail and ADRs
+├── compose.yaml                 # local stack
+├── Makefile                     # canonical dev/demo commands
+└── README.md
 ```
-
-Implementation plans for `apps/api` and `apps/web`, the policy DSL, and the evidence schema are tracked separately and will land in `docs/` as they stabilize.
 
 ## Status
 
-Early development. Built in the open as a portfolio and learning project, with the explicit goal of becoming a usable demonstrator and, eventually, a real product.
+ContextGuard is an early MVP/demo, built in the open. The current version is
+ready to demonstrate the product thesis locally:
 
-The accompanying [build plan](docs/plan/README.md) maps every concept used in ContextGuard — retrieval, context engineering, prompt security, evals, agentic patterns, EU AI regulation — to the stage of the product where it is applied. Reading the codebase and reading the build plan are meant to reinforce each other.
+- policy-aware context filtering,
+- redaction and blocking,
+- evidence records,
+- red-team and benchmark artifacts,
+- a dashboard for query, sources, policy, and evidence review.
 
-## License & legal
+It is not a compliance certification, legal opinion, or production deployment
+template. Real production use would still need hardened identity, connector-level
+ACL mapping, retention policy, deployment hardening, and a fuller security
+review.
 
-To be decided before the first external release. Nothing in this repository is legal advice.
+## Legal
+
+ContextGuard is not legal advice and does not by itself make a system compliant
+with GDPR, the EU AI Act, DORA, or any other regime. It is an engineering control
+and evidence layer intended to support stronger AI data-flow governance.
+
+License: to be decided before first external release.

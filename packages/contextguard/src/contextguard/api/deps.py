@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 import structlog
 
 from contextguard.core import ContextGuard
+from contextguard.core.evidence_jsonl import EvidenceSink
 
 if TYPE_CHECKING:
     from contextguard.llm.gateway import LLMGateway
@@ -28,6 +29,31 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 _DEFAULT_POLICY_PATH = Path("data/policies/example.yaml")
+
+
+def _evidence_sink() -> EvidenceSink | None:
+    """Optional durable evidence sink for the demo/reference deployment.
+
+    The zero-infra default remains in-memory/JSONL. Setting
+    ``EVIDENCE_SINK=postgres`` opts the API adapter into Postgres JSONB evidence
+    without making the core import a database.
+    """
+    if (os.environ.get("EVIDENCE_SINK") or "").lower() != "postgres":
+        return None
+    try:
+        from contextguard.db.evidence import PostgresEvidenceSink, create_evidence_schema
+        from contextguard.retrieval.store import get_engine
+    except ImportError as exc:
+        logger.warning("evidence_sink.unavailable", sink="postgres", error=str(exc))
+        return None
+
+    try:
+        engine = get_engine()
+        create_evidence_schema(engine)
+        return PostgresEvidenceSink(engine)
+    except Exception as exc:
+        logger.warning("evidence_sink.unavailable", sink="postgres", error=str(exc))
+        return None
 
 
 def _policy_guard(*, log_event: str) -> ContextGuard:
@@ -39,10 +65,11 @@ def _policy_guard(*, log_event: str) -> ContextGuard:
     """
     raw = os.environ.get("POLICY_PATH")
     path = Path(raw) if raw else _DEFAULT_POLICY_PATH
+    sink = _evidence_sink()
     if not path.is_file():
         logger.warning(log_event, path=str(path))
-        return ContextGuard()
-    return ContextGuard.from_policy(path)
+        return ContextGuard(sink=sink)
+    return ContextGuard.from_policy(path, sink=sink)
 
 
 @lru_cache

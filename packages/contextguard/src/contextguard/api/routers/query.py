@@ -17,6 +17,8 @@ import structlog
 from contextguard_contracts import (
     Chunk,
     Classification,
+    GuardedContext,
+    Outcome,
     QueryRequest,
     QueryResponse,
     RetrievedChunk,
@@ -37,6 +39,8 @@ logger = structlog.get_logger(__name__)
 
 router = APIRouter(tags=["query"])
 
+_WITHHELD_TEXT = "[withheld by ContextGuard: this chunk did not reach the model]"
+
 
 def _to_chunk(hit: Any) -> Chunk:
     """Adapt a retrieval hit into a domain :class:`Chunk` for the guard."""
@@ -50,17 +54,43 @@ def _to_chunk(hit: Any) -> Chunk:
     )
 
 
-def _to_retrieved(hit: Any) -> RetrievedChunk:
-    """Adapt a retrieval hit into the public :class:`RetrievedChunk` model."""
+def _to_retrieved(hit: Any, *, text: str | None = None) -> RetrievedChunk:
+    """Adapt a retrieval hit into the public :class:`RetrievedChunk` model.
+
+    The public query response is user-facing. It may expose retrieval provenance,
+    but it must not leak the raw text of chunks that the guard blocked.
+    """
     return RetrievedChunk(
         id=hit.id,
         doc_id=hit.doc_id,
         tenant=hit.tenant,
         classification=Classification(str(hit.classification)),
-        text=hit.text,
+        text=hit.text if text is None else text,
         score=float(hit.score),
         metadata=dict(getattr(hit, "metadata", {}) or {}),
     )
+
+
+def _safe_retrieved_chunks(hits: list[Any], guarded: GuardedContext) -> list[RetrievedChunk]:
+    """Return retrieved provenance with text constrained by the guard verdict.
+
+    Allowed chunks expose the text that actually reached the model. Redacted
+    chunks expose their masked text. Blocked chunks expose identity/provenance
+    only, never the original sensitive payload. If a hit somehow has no decision,
+    fail closed and withhold its text.
+    """
+    decisions = {decision.chunk_id: decision for decision in guarded.decisions}
+    allowed = {chunk.id: chunk for chunk in guarded.allowed_chunks}
+    safe: list[RetrievedChunk] = []
+    for hit in hits:
+        decision = decisions.get(hit.id)
+        guarded_chunk = allowed.get(hit.id)
+        if decision is None or decision.outcome is Outcome.BLOCKED or guarded_chunk is None:
+            text = _WITHHELD_TEXT
+        else:
+            text = guarded_chunk.text
+        safe.append(_to_retrieved(hit, text=text))
+    return safe
 
 
 @router.post("/v1/query", response_model=QueryResponse)
@@ -108,7 +138,7 @@ def query(
     )
     return QueryResponse(
         answer=completion.text,
-        retrieved_chunks=[_to_retrieved(h) for h in hits],
+        retrieved_chunks=_safe_retrieved_chunks(hits, guarded),
         guarded_context=guarded,
     )
 

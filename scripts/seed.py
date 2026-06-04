@@ -14,13 +14,19 @@ Needs the compose stack (Postgres + Redis + Ollama) and the ``[ingest]`` /
 
 from __future__ import annotations
 
+from contextguard.db.evidence import create_evidence_schema
 from contextguard.jobs.ingest import IngestReport, enqueue_ingest
 from contextguard.jobs.worker import run_worker
 from contextguard.retrieval.chunking import FixedSizeChunker, chunk_corpus
+from contextguard.retrieval.store import create_schema, get_engine
 from contextguard_eval_harness.corpus import load_corpus
 
 
 def main() -> None:
+    engine = get_engine()
+    create_schema(engine)
+    create_evidence_schema(engine)
+
     documents = list(load_corpus())
     chunks = chunk_corpus(documents, FixedSizeChunker())
     job = enqueue_ingest(chunks)

@@ -1,11 +1,11 @@
-// Query Console logic: a chat-style RAG session. Each send runs the leaky
-// /v1/query (retrieval + model answer), then /v1/guard to get the firewall
-// verdict over the retrieved chunks, records both in history, and exposes the
-// run so the evidence drawer can browse its sources. The SFC stays presentational.
+// Query Console logic: a chat-style RAG session. Each send runs /v1/query
+// (retrieval + guard + model answer), records the returned guard verdict in
+// history, and exposes the run so the evidence drawer can browse its sources.
+// The SFC stays presentational.
 import { ref } from "vue";
 
 import type { GuardedContext, RetrievedChunk } from "@/api/types";
-import { guardChunks, retrievedToChunk, runQuery } from "@/api/operations";
+import { runQuery } from "@/api/operations";
 import type { AttackPrompt } from "@/lib/corpus";
 import { useAuthStore } from "@/stores/auth";
 import { useHistoryStore } from "@/stores/history";
@@ -65,14 +65,17 @@ export function useQueryConsole() {
 
     try {
       const result = await runQuery(query, k.value);
-      const guarded = await guardChunks(query, result.retrieved_chunks.map(retrievedToChunk));
-      const run: ConsoleRun = { query, retrieved: result.retrieved_chunks, guarded };
+      const run: ConsoleRun = {
+        query,
+        retrieved: result.retrieved_chunks,
+        guarded: result.guarded_context,
+      };
 
       history.record({
         query,
         identity: auth.label,
         retrieved: result.retrieved_chunks,
-        guarded,
+        guarded: result.guarded_context,
         answer: result.answer,
       });
 

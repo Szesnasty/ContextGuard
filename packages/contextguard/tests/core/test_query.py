@@ -16,6 +16,9 @@ from contextguard.core import ContextGuard
 from contextguard.llm.gateway import Completion
 from contextguard_contracts import (
     Chunk,
+    ChunkDecision,
+    GuardedContext,
+    Outcome,
     QueryResponse,
     UserContext,
 )
@@ -71,6 +74,33 @@ class _SpyGuard:
         return self._inner.guard(user, query, candidate_chunks)
 
 
+class _BlockFirstGuard:
+    """Blocks the first hit so the response-scrubbing contract is testable."""
+
+    def guard(self, user: UserContext, query: str, candidate_chunks: list[Chunk]) -> GuardedContext:
+        return GuardedContext(
+            allowed_chunks=candidate_chunks[1:],
+            decisions=[
+                ChunkDecision(
+                    chunk_id=candidate_chunks[0].id,
+                    outcome=Outcome.BLOCKED,
+                    reasons=["rule:test-block"],
+                    policies_triggered=["test-block"],
+                ),
+                *[
+                    ChunkDecision(
+                        chunk_id=chunk.id,
+                        outcome=Outcome.ALLOWED,
+                        reasons=["passthrough"],
+                    )
+                    for chunk in candidate_chunks[1:]
+                ],
+            ],
+            tokens_before=9,
+            tokens_after=5,
+        )
+
+
 def _override(client: TestClient, **deps: Any) -> None:
     mapping = {
         get_retriever: deps.get("retriever", _FakeRetriever()),
@@ -118,6 +148,20 @@ def test_query_response_validates_against_contract(client: TestClient) -> None:
     parsed = QueryResponse.model_validate(resp.json())
     assert parsed.retrieved_chunks[0].id == "c1"
     assert parsed.retrieved_chunks[0].score == pytest.approx(0.9)
+
+
+def test_query_response_withholds_blocked_chunk_text(client: TestClient) -> None:
+    _override(client, guard=_BlockFirstGuard())
+    resp = client.post("/v1/query", json=_request(), headers=_auth())
+    assert resp.status_code == 200
+    body = resp.json()
+
+    blocked = body["retrieved_chunks"][0]
+    assert blocked["id"] == "c1"
+    assert blocked["doc_id"] == "doc-1"
+    assert "FALCON-7788" not in blocked["text"]
+    assert "withheld by ContextGuard" in blocked["text"]
+    assert body["retrieved_chunks"][1]["text"] == "The finance team meets on Tuesdays."
 
 
 def test_query_calls_guard(client: TestClient) -> None:

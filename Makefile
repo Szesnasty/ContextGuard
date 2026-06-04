@@ -53,8 +53,8 @@ test: ## Run the core test tier (no infra) + JS unit tests
 test-int: ## Run integration tier (needs `make up`)
 	$(UV_RUN) pytest -m integration
 
-e2e: ## Run end-to-end tests (Playwright)
-	@echo "e2e: not implemented in phase 0"
+e2e: ## Run the local demo smoke test (needs `make demo` or API on :8000)
+	$(UV_RUN) python scripts/demo_smoke.py
 
 lint: ## Lint Python + JS
 	$(UV_RUN) ruff check .
@@ -69,7 +69,7 @@ fmt: ## Format Python + JS
 	@command -v pnpm >/dev/null 2>&1 && pnpm -r --if-present format || true
 
 demo: ## Run the demo flow
-	@echo "demo: not implemented in phase 0"
+	$(UV_RUN) python scripts/demo.py
 
 leak-demo: ## Print the before/after leak report (zero-infra, Public v0.1)
 	$(UV_RUN) python scripts/leak_demo.py
