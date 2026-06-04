@@ -163,6 +163,24 @@ Then run:
 API_BASE=http://127.0.0.1:8008 make e2e
 ```
 
+## Product Tour
+
+The local dashboard is the fastest way to see the product shape: ask a normal
+RAG question, then inspect which retrieved sources were allowed, redacted, or
+blocked before the prompt was assembled.
+
+### RAG Console
+
+![RAG Console showing a support identity, a cross-tenant prompt, and allowed/redacted/blocked source counts.](docs/img/rag-console-cross-tenant.png)
+
+### Evidence Decision Flow
+
+![Evidence Viewer showing retrieved chunks passing through the policy gate into allowed, redacted, blocked, and prompt outcomes.](docs/img/evidence-decision-flow.png)
+
+### Context Delta And Enforced Decisions
+
+![Evidence Viewer showing context withheld from the model and the policy decisions behind each blocked or redacted chunk.](docs/img/context-delta-enforced-decisions.png)
+
 ## What The Demo Shows
 
 The planted demo corpus contains ordinary product/support documents plus
