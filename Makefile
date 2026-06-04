@@ -3,29 +3,30 @@
 # real target does not exist yet, so the contract is stable from day one.
 
 .DEFAULT_GOAL := help
-.PHONY: help install lock verify-lock up down down-v seed token run test test-int e2e lint types fmt demo layout schemas leak-demo benchmark red-team openapi
+.PHONY: help install lock verify-lock up down down-v seed token run test test-int e2e lint types build ci fmt demo layout schemas leak-demo benchmark red-team openapi
 
 # --- Supply-chain safety -----------------------------------------------------
 # Lockfiles (uv.lock, pnpm-lock.yaml) are the single source of truth and are
 # committed. Every install/run below is FROZEN: it must match the lockfile or
 # fail loudly. Versions never drift implicitly. To change a dependency you must
 # run `make lock` explicitly, which is reviewable in the diff.
-UV_RUN := uv run --frozen $(if $(wildcard .env),--env-file .env,)
+UV_CACHE_DIR ?= .uv-cache
+UV_RUN := UV_CACHE_DIR=$(UV_CACHE_DIR) uv run --frozen $(if $(wildcard .env),--env-file .env,)
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
 		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2}'
 
 install: ## Install deps EXACTLY as locked (no drift, no resolution)
-	uv sync --frozen --all-packages
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv sync --frozen --all-packages
 	pnpm install --frozen-lockfile
 
 lock: ## Intentionally update lockfiles (review the diff before commit!)
-	uv lock
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv lock
 	pnpm install --lockfile-only
 
 verify-lock: ## Fail if lockfiles are stale vs manifests (CI gate)
-	uv lock --check
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv lock --check
 	pnpm install --frozen-lockfile
 
 up: ## Start the local stack (compose), wait until healthy
@@ -63,6 +64,12 @@ lint: ## Lint Python + JS
 types: ## Type-check Python (mypy) + JS (vue-tsc)
 	$(UV_RUN) mypy
 	pnpm -r --if-present typecheck
+
+build: ## Build Python package artifacts + production web bundle
+	UV_CACHE_DIR=$(UV_CACHE_DIR) uv build --all-packages --out-dir dist/python
+	pnpm --filter @contextguard/web build
+
+ci: verify-lock lint types test build ## Run the full CI gate locally
 
 fmt: ## Format Python + JS
 	$(UV_RUN) ruff format .
