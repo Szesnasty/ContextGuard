@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# HTTP adapter (Tier A). `local core install[api]`.
+# HTTP adapter (Tier A). Planned public extra: `contextguard[api]`.
 api = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
@@ -30,25 +30,25 @@ pgvector = [
     "psycopg[binary]>=3.2",
     "alembic>=1.13",
 ]
-# Local embeddings via Ollama (default, offline). `local core install[embeddings]`.
+# Local embeddings via Ollama (default, offline). Planned public extra: `contextguard[embeddings]`.
 embeddings = [
     "httpx>=0.27",
 ]
-# Local LLM via Ollama chat (default, offline). `local core install[llm]`.
+# Local LLM via Ollama chat (default, offline). Planned public extra: `contextguard[llm]`.
 llm = [
     "httpx>=0.27",
 ]
 # Cross-encoder reranker (`bge-reranker-base`, B3.4). Heavy (pulls torch) and
-# off by default (RERANKER=none); `local core install[rerank]` to enable.
+# off by default (RERANKER=none); planned public extra: `contextguard[rerank]`.
 rerank = [
     "sentence-transformers>=3",
 ]
-# Background ingestion via RQ + Redis (Tier A). `local core install[ingest]`.
+# Background ingestion via RQ + Redis (Tier A). Planned public extra: `contextguard[ingest]`.
 ingest = [
     "rq>=1.16",
     "redis>=5",
 ]
-# Optional cloud embedder/LLM upgrade (OpenAI). `local core install[openai]`.
+# Optional cloud embedder/LLM upgrade (OpenAI). Planned public extra: `contextguard[openai]`.
 openai = [
     "openai>=1.30",
 ]

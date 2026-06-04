@@ -16,9 +16,9 @@ Two backends, one :class:`Reranker` protocol - the same shape as
   the library stays zero-infra and ``make test`` runs offline (ADR-010). A
   no-rerank pipeline is a worse pipeline, not a broken one.
 * :class:`CrossEncoderReranker` - the real ``bge-reranker-base`` cross-encoder
-  (architecture notes reranker row), loaded lazily via ``sentence-transformers`` from
-  the opt-in ``[rerank]`` extra. ``torch`` never enters the library process
-  until a cross-encoder is actually constructed and used.
+  backend, loaded lazily via ``sentence-transformers`` from the opt-in
+  ``[rerank]`` extra. ``torch`` never enters the library process until a
+  cross-encoder is actually constructed and used.
 
 The backend is chosen by the ``RERANKER`` environment variable (``none`` by
 default). :func:`rerank_chunks` is the pure, infra-free stage applied to already

@@ -7,11 +7,14 @@ redact**, driven by a declarative YAML policy. It runs in-memory with no
 database, no network, and no model calls (ADR-010). Heavier capabilities
 (HTTP API, Postgres, Presidio, …) are opt-in extras.
 
-## Install
+## Local Install
+
+Public package release is planned after the external release and license
+decision. Inside this workspace, use the root development environment:
 
 ```bash
-local core install          # zero-infra core
-pip install "contextguard[api]"   # + FastAPI HTTP adapter
+uv sync --frozen --all-packages
+uv run python -c "from contextguard import ContextGuard; print(ContextGuard)"
 ```
 
 ## Quickstart

@@ -8,8 +8,8 @@ allow/block/redact at mid-retrieval), **redact** (mask the text of redacted
 chunks) — then composes the survivors under an optional token budget and emits
 one evidence record.
 
-It is the exact object a Tier B drop-in user imports: it runs with nothing but
-``local core install`` — no DB, no network, no frameworks (ADR-010).
+It is the exact object a Tier B drop-in user imports: it runs from a clean core
+install with no DB, no network, no frameworks (ADR-010).
 ``from_policy()`` builds a guard from a YAML file with zero infra.
 """
 

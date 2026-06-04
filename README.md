@@ -363,8 +363,7 @@ ContextGuard is not:
 │   ├── policies/                # example policy
 │   └── red-team-corpora/        # golden adversarial cases
 ├── docs/
-│   ├── plan/                    # build plan
-│   └── plan/              # learning trail and ADRs
+│   └── plan/                    # build plan
 ├── compose.yaml                 # local stack
 ├── Makefile                     # canonical dev/demo commands
 └── README.md

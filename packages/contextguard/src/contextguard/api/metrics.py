@@ -1,8 +1,8 @@
 """Prometheus product metrics for the HTTP adapter (Tier A).
 
 The ``cg_*`` product metrics (ADR-003) live here and are exposed via
-``GET /metrics`` (the design decision in architecture notes: ``prometheus_client`` +
-``/metrics``, no Grafana in the MVP). These are an adapter-tier concern:
+``GET /metrics`` (``prometheus_client`` + ``/metrics``, no Grafana in the MVP).
+These are an adapter-tier concern:
 ``prometheus_client`` is infra, so this module is part of the ``[api]`` tier and
 is never imported by ``contextguard.core`` (ADR-010, zero-infra core).
 

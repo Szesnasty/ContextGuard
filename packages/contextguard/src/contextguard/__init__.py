@@ -6,8 +6,8 @@ anything heavier than pydantic+pyyaml (ADR-004, ADR-010); heavier adapters
 lazily.
 
 The public entry point is re-exported here so `from contextguard import
-ContextGuard` works on a bare `local core install` (ADR-013). This import
-is zero-infra: it pulls only the core, never a framework.
+ContextGuard` works from a clean core install (ADR-013). This import is
+zero-infra: it pulls only the core, never a framework.
 """
 
 from __future__ import annotations

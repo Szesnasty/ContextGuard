@@ -7,9 +7,9 @@ nothing leaves the machine. A cloud upgrade (OpenAI) slots in behind the same
 protocol when explicitly configured.
 
 LiteLLM is the documented production swap for provider-agnostic routing and
-fallback (plan topic 11); it would implement this same :class:`LLMGateway`
-without touching callers (ADR-004). It is deliberately *not* the default - see
-ADR-014 - to keep the dependency surface small and consistent with B1.3.
+fallback; it would implement this same :class:`LLMGateway` without touching
+callers (ADR-004). It is deliberately *not* the default - see ADR-014 - to keep
+the dependency surface small and consistent with B1.3.
 
 Heavy clients (``httpx``, ``openai``) are imported lazily so importing this
 module never pulls a network stack until a gateway is actually used (ADR-010).

@@ -26,14 +26,14 @@ dev = [
     "httpx>=0.27",
     "types-PyYAML>=6",
     # Adapter (Tier A) deps needed to test contextguard.api; end users get these
-    # via `local core install[api]` (ADR-013).
+    # via the planned public `contextguard[api]` extra (ADR-013).
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "structlog>=24",
     "pyjwt>=2.8",
     "prometheus-client>=0.20",
     # Baseline RAG (Tier A) deps for integration tests; end users get these via
-    # `local core install[pgvector,embeddings]` (ADR-008/ADR-010).
+    # the planned public `contextguard[pgvector,embeddings]` extras (ADR-008/ADR-010).
     "sqlalchemy>=2",
     "pgvector>=0.3",
     "alembic>=1.13",
