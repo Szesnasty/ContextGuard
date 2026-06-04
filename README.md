@@ -41,6 +41,61 @@ ContextGuard is the control plane for that boundary:
 ContextGuard is not trying to be a better retriever or a smarter model. It is a
 small, explicit enforcement layer around the context window.
 
+## Usage Modes
+
+ContextGuard is designed around two usage modes:
+
+1. **Core library** - a zero-infra Python guard that takes `UserContext`, a
+   query, and candidate chunks, then returns allowed, redacted, and blocked
+   chunks plus an evidence record. This is the primary product surface. Public
+   package release is planned after the first external release and license
+   decision.
+2. **Local demo stack** - a reference RAG system with FastAPI, pgvector, Ollama,
+   and a Vue dashboard, used to demonstrate policy-aware retrieval, evidence,
+   and leak prevention end to end.
+
+## Core Library Quickstart
+
+The core is designed to run as a Python library. It works inside this repo
+without Docker, a database, a model, or network access. A public package release
+is planned after the external release and license decision.
+
+```python
+from contextguard import ContextGuard
+from contextguard.core.types import Chunk, Classification, UserContext
+
+guard = ContextGuard.from_policy("data/policies/example.yaml")
+
+user = UserContext(
+    sub="sales@acme",
+    tenant="acme",
+    role="sales",
+    purpose="support",
+)
+
+chunks = [
+    Chunk(
+        id="public-faq",
+        doc_id="faq",
+        tenant="acme",
+        classification=Classification.PUBLIC,
+        text="Refund requests are handled by support.",
+    ),
+    Chunk(
+        id="secret-mna",
+        doc_id="mna-falcon",
+        tenant="acme",
+        classification=Classification.CONFIDENTIAL,
+        text="Project Falcon acquisition target is Initech for 1.2B.",
+    ),
+]
+
+result = guard.guard(user, "Are we acquiring anyone?", chunks)
+
+print([chunk.id for chunk in result.allowed_chunks])
+print(guard.last_evidence())
+```
+
 ## Demo Quickstart
 
 Prerequisites:
@@ -202,46 +257,6 @@ flowchart TB
     Compose["compose.yaml<br/>Postgres, Redis, Ollama, Langfuse"] --> API
 ```
 
-## Library Quickstart
-
-The core library can run without Docker, a database, a model, or network access.
-
-```python
-from contextguard import ContextGuard
-from contextguard.core.types import Chunk, Classification, UserContext
-
-guard = ContextGuard.from_policy("data/policies/example.yaml")
-
-user = UserContext(
-    sub="sales@acme",
-    tenant="acme",
-    role="sales",
-    purpose="support",
-)
-
-chunks = [
-    Chunk(
-        id="public-faq",
-        doc_id="faq",
-        tenant="acme",
-        classification=Classification.PUBLIC,
-        text="Refund requests are handled by support.",
-    ),
-    Chunk(
-        id="secret-mna",
-        doc_id="mna-falcon",
-        tenant="acme",
-        classification=Classification.CONFIDENTIAL,
-        text="Project Falcon acquisition target is Initech for 1.2B.",
-    ),
-]
-
-result = guard.guard(user, "Are we acquiring anyone?", chunks)
-
-print([chunk.id for chunk in result.allowed_chunks])
-print(guard.last_evidence())
-```
-
 ## Policy Example
 
 Policies are declarative YAML. Rules are evaluated by priority. The first match
@@ -286,8 +301,8 @@ LLM judge.
 | `make test` | 304 Python tests + 11 frontend tests passed |
 | `make lint` | Python lint clean; frontend has known `v-html` warnings |
 | `make types` | mypy + Vue typecheck passed |
-| `make benchmark` | policy off: 100% leak rate, policy on: 0% leak rate |
-| `make red-team` | 6/6 cases passed, 0% leak rate, 0 replay mismatches |
+| `make benchmark` | on the planted demo corpus: policy off 100% leak rate, policy on 0% leak rate |
+| `make red-team` | on the committed adversarial corpus: 6/6 cases passed, 0% leak rate, 0 replay mismatches |
 | `make e2e` | fast local demo smoke test |
 
 See:
@@ -309,6 +324,16 @@ ContextGuard is not a generic LLM firewall. It focuses on the context boundary:
 The product thesis is narrow on purpose:
 
 **Was this context allowed to be here, and can we prove it?**
+
+## What ContextGuard Is Not
+
+ContextGuard is not:
+
+- a replacement for your retriever,
+- a replacement for identity or ACL mapping,
+- a generic LLM firewall,
+- a compliance certification,
+- a guarantee that no data can ever leak.
 
 ## Project Layout
 
