@@ -16,3 +16,7 @@ updates:
       day: monday
       time: "08:00"
     open-pull-requests-limit: 5
+    groups:
+      frontend-dependencies:
+        patterns:
+          - "*"

@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security policy
+    url: https://github.com/Szesnasty/ContextGuard/security/policy
+    about: Report sensitive vulnerabilities privately and avoid posting secrets or exploit details in public issues.
+  - name: Latest release
+    url: https://github.com/Szesnasty/ContextGuard/releases/latest
+    about: Download the latest official source, wheels, and demo assets.

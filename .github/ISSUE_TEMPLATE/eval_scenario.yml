@@ -1,0 +1,57 @@
+name: Eval or red-team scenario
+description: Propose a deterministic benchmark, red-team, or regression case.
+title: "[Eval]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ContextGuard evals should be deterministic and use synthetic data only. Please do not include real documents, real tenants, credentials, or private personal data.
+  - type: dropdown
+    id: category
+    attributes:
+      label: Scenario category
+      options:
+        - Tenant isolation
+        - Role/classification access
+        - PII redaction
+        - Secret redaction
+        - Indirect prompt injection
+        - Mixed allowed/redacted/blocked context
+        - Benign false-positive check
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: identity
+    attributes:
+      label: Synthetic identity
+      description: Tenant, role, purpose, and any relevant claims.
+      placeholder: tenant=acme, role=support, purpose=support
+    validations:
+      required: true
+  - type: textarea
+    id: query
+    attributes:
+      label: Query
+      description: The user query or attack prompt.
+    validations:
+      required: true
+  - type: textarea
+    id: chunks
+    attributes:
+      label: Candidate chunks
+      description: Synthetic chunk metadata and text.
+      placeholder: |
+        id=contoso-pricing, tenant=contoso, classification=confidential
+        text=Enterprise pricing is...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected decisions
+      description: Which chunks should be allowed, redacted, or blocked, and why?
+      placeholder: contoso-pricing should be blocked by tenant-isolation.
+    validations:
+      required: true

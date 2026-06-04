@@ -87,6 +87,15 @@ uv pip install \
 
 For the full local demo, clone the repository and use `make demo`.
 
+## Project Docs
+
+- [Changelog](CHANGELOG.md) - release history and notable changes.
+- [Security policy](SECURITY.md) - vulnerability scope and reporting guidance.
+- [Contributing guide](CONTRIBUTING.md) - development rules and local workflow.
+- [Roadmap](ROADMAP.md) - planned evals, integrations, and production-hardening work.
+- [Benchmark report](BENCHMARK.md) - deterministic leak-prevention checks.
+- [Red-team report](RED-TEAM.md) - adversarial prompt and retrieval cases.
+
 ## Product Tour
 
 The dashboard shows the security boundary in plain sight: retrieval can find a

@@ -1,0 +1,52 @@
+name: Policy or redaction issue
+description: Report a non-sensitive policy, redaction, or evidence mismatch.
+title: "[Policy]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for non-sensitive policy behavior. If the report includes a real exploit, secret, private document, or customer data, use the security policy instead of a public issue.
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: Issue type
+      options:
+        - Chunk should have been blocked
+        - Chunk should have been redacted
+        - Chunk should have been allowed
+        - Evidence record is misleading
+        - Blocked text appears where it should not
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: synthetic_case
+    attributes:
+      label: Synthetic minimal case
+      description: Include only synthetic identity, query, chunk metadata, and chunk text.
+      placeholder: |
+        user: sales@acme, tenant=acme, role=sales
+        query: Are we acquiring any company?
+        chunk: tenant=acme, classification=confidential, text=Project Falcon...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected decision
+      description: What should the guard have returned?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual decision
+      description: What did ContextGuard return?
+    validations:
+      required: true
+  - type: input
+    id: policy
+    attributes:
+      label: Policy file
+      placeholder: data/policies/example.yaml or data/policies/strict.yaml

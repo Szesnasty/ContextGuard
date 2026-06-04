@@ -1,0 +1,54 @@
+name: Bug report
+description: Report a reproducible problem in the library, API, demo, or dashboard.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please use synthetic examples and do not include real customer data, secrets, or private documents.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong?
+      placeholder: The dashboard sources drawer does not open after a query...
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: List the smallest steps that reproduce the issue.
+      placeholder: |
+        1. Run `make demo`
+        2. Select `support@acme`
+        3. Load the cross-tenant prompt
+        4. Click `View sources`
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      placeholder: v1.0.0, main@commit, or package version
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the relevant OS, Python, Node, Docker, browser, and model details.
+      placeholder: macOS 15, Python 3.12, Node 20, Docker Desktop, Ollama llama3.2:3b
