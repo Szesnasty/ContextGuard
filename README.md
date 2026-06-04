@@ -190,13 +190,14 @@ as raw retrieved text.**
 ```mermaid
 flowchart LR
     U["User query + signed identity"] --> A["FastAPI adapter"]
-    A --> R["Retriever<br/>BM25 + pgvector"]
+    A --> R["Hybrid retriever<br/>pgvector kNN + BM25"]
     R --> C["Candidate chunks"]
-    C --> G["ContextGuard"]
-    G --> P["Allowed / redacted context"]
-    P --> L["LLM"]
+    C --> E1
+    E3 --> P["Allowed + redacted chunks"]
+    P --> PB["Prompt builder<br/>cited context only"]
+    PB --> L["LLM gateway<br/>Ollama by default"]
     L --> O["Grounded answer"]
-    G --> E["Evidence record"]
+    E3 --> E["Evidence record"]
 
     subgraph Guard["Context firewall"]
         E1["Enrich<br/>PII, secrets, injection signals"]
@@ -204,9 +205,6 @@ flowchart LR
         E3["Redact / block / allow"]
         E1 --> E2 --> E3
     end
-
-    G --> E1
-    E3 --> P
 ```
 
 ### Decision Pipeline
@@ -217,23 +215,27 @@ flowchart TD
     K --> C1["Chunk: public/internal"]
     K --> C2["Chunk: confidential"]
     K --> C3["Chunk: cross-tenant"]
-    K --> C4["Chunk: PII/secret/injection"]
+    K --> C4["Chunk: PII or secret"]
+    K --> C5["Chunk: injection risk"]
 
     C1 --> A["Allowed"]
     C2 --> B["Blocked<br/>sales-no-confidential"]
     C3 --> T["Blocked<br/>tenant-isolation"]
-    C4 --> D["Redacted or blocked<br/>policy-driven risk handling"]
+    C4 --> D["Redacted<br/>redact-pii / redact-secrets"]
+    C5 --> I["Blocked<br/>block-injection"]
 
     A --> P["Prompt context"]
     D --> P
     B --> X["Withheld from model"]
     T --> X
+    I --> X
     P --> M["Model answer"]
 
     A --> EV["Evidence"]
     B --> EV
     T --> EV
     D --> EV
+    I --> EV
 ```
 
 ### Repository Architecture
@@ -241,14 +243,20 @@ flowchart TD
 ```mermaid
 flowchart TB
     Web["apps/web<br/>Vue dashboard"] --> API["contextguard.api<br/>FastAPI adapter"]
-    API --> Core["contextguard.core<br/>zero-infra guard"]
-    API --> Retrieval["retrieval<br/>pgvector + BM25"]
-    API --> LLM["llm gateway<br/>Ollama by default"]
+    API --> Query["/v1/query<br/>retrieve -> guard -> prompt -> LLM"]
+    API --> Scan["/v1/guard<br/>scan-only verdict"]
+    Query --> Retrieval["retrieval<br/>pgvector kNN + BM25"]
+    Query --> Core["contextguard.core<br/>zero-infra guard"]
+    Query --> Prompt["prompt builder<br/>allowed chunks only"]
+    Prompt --> LLM["llm gateway<br/>Ollama by default"]
+    Scan --> Core
     API --> Metrics["/metrics<br/>Prometheus format"]
 
     Core --> Contracts["packages/contracts<br/>Pydantic models + JSON Schema"]
     Core --> Policy["packages/policy-dsl<br/>YAML policy evaluator"]
-    Core --> Evidence["evidence sink<br/>JSONL or Postgres JSONB"]
+    Core --> Evidence["EvidenceSink protocol<br/>in-memory / JSONL default"]
+    API --> PgEvidence["optional Postgres JSONB evidence<br/>EVIDENCE_SINK=postgres"]
+    PgEvidence --> Evidence
 
     Eval["packages/eval-harness<br/>benchmarks + red-team corpus"] --> Core
     Data["data/<br/>tenants, users, policies, attacks"] --> Retrieval
