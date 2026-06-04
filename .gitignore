@@ -28,6 +28,7 @@ apps/web/public/reports/
 .env
 .env.*
 !.env.example
+!**/.env.example
 
 # Editor / OS
 .DS_Store

@@ -108,6 +108,15 @@ Prerequisites:
 - `uv`
 - `pnpm`
 
+Optional local configuration:
+
+```bash
+cp .env.example .env
+```
+
+You can skip this step if the default ports are free. `make demo` reads `.env`
+automatically when present.
+
 Run the local demo:
 
 ```bash
