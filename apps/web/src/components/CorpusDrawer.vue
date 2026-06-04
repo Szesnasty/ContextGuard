@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AttackPrompt } from "@/lib/corpus";
-import SanitizedHtml from "@/components/SanitizedHtml";
+import SanitizedHtml from "@/components/SanitizedHtml.vue";
 import { useCorpusDrawer } from "@/composables/useCorpusDrawer";
 import { classificationClass, outcomeClass, renderMd } from "@/lib/firewall";
 

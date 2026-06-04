@@ -2,7 +2,7 @@
 import { toRef } from "vue";
 
 import type { GuardedContext, RetrievedChunk } from "@/api/types";
-import SanitizedHtml from "@/components/SanitizedHtml";
+import SanitizedHtml from "@/components/SanitizedHtml.vue";
 import { useRagDrawer } from "@/composables/useRagDrawer";
 import { classificationClass, outcomeClass, renderMd } from "@/lib/firewall";
 

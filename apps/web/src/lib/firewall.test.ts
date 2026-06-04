@@ -4,7 +4,6 @@ import type { GuardedContext, RetrievedChunk } from "@/api/types";
 import {
   classificationClass,
   enrich,
-  evidenceFlow,
   groupByDocument,
   isContained,
   outcomeClass,
@@ -96,14 +95,6 @@ describe("groupByDocument", () => {
     expect(docA.chunks).toHaveLength(2);
     expect(docA.anyInPrompt).toBe(true);
     expect(docA.anyWithheld).toBe(true);
-  });
-});
-
-describe("evidenceFlow", () => {
-  it("renders a mermaid flowchart with the counts", () => {
-    const flow = evidenceFlow(3, guarded());
-    expect(flow.startsWith("flowchart LR")).toBe(true);
-    expect(flow).toContain("Retrieved<br/>3");
   });
 });
 

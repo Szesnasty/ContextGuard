@@ -1,8 +1,8 @@
-// Vitest global setup: stub browser APIs that jsdom lacks but our components
-// (mermaid, monaco) probe at import time. Keeps unit tests headless and fast.
+// Vitest global setup: stub browser APIs that jsdom lacks but our editor
+// components probe at import time. Keeps unit tests headless and fast.
 import { vi } from "vitest";
 
-// Monaco and mermaid call matchMedia / ResizeObserver on init; jsdom has neither.
+// Monaco calls matchMedia / ResizeObserver on init; jsdom has neither.
 if (!window.matchMedia) {
   window.matchMedia = vi.fn().mockImplementation((query: string) => ({
     matches: false,

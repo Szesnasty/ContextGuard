@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import DecisionFlow from "@/components/DecisionFlow.vue";
 import DecisionsTable from "@/components/DecisionsTable.vue";
-import MermaidDiagram from "@/components/MermaidDiagram.vue";
 import { useEvidenceViewer } from "@/composables/useEvidenceViewer";
 
 const {
   runs,
   selected,
   hasRuns,
-  flow,
   counts,
   reduction,
   contained,
@@ -92,7 +91,10 @@ const {
           <h2 class="detail__h">
             Decision flow
           </h2>
-          <MermaidDiagram :definition="flow" />
+          <DecisionFlow
+            :retrieved="selected.retrieved.length"
+            :guarded="selected.guarded"
+          />
         </div>
 
         <div class="card">

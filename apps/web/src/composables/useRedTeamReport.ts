@@ -4,7 +4,7 @@
 import { marked } from "marked";
 import { onMounted, ref } from "vue";
 
-import { sanitizeHtml } from "@/lib/firewall";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 export function useRedTeamReport() {
   const html = ref("");

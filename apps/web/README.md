@@ -91,10 +91,9 @@ Root-level CI runs these through `make lint`, `make types`, `make test`, and
 
 - API types are generated from the committed OpenAPI snapshot in
   `packages/contracts/ts/openapi.json`.
-- Markdown and diagram rendering go through dedicated components instead of raw
+- Markdown rendering goes through a DOMPurify-backed component instead of raw
   template HTML.
 - Reports copied into `public/reports/` are generated from the repository-root
   red-team and benchmark reports during `predev` and `prebuild`.
 - The dashboard is demo-focused. It is not an admin console, production auth
   surface, or hosted SaaS frontend yet.
-

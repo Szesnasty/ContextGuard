@@ -8,7 +8,6 @@ import {
   contextAfter,
   contextBefore,
   enforced,
-  evidenceFlow,
   isContained,
   tally,
   tokenReduction,
@@ -29,11 +28,6 @@ export function useEvidenceViewer() {
   const runs = computed(() => history.runs);
   const selected = computed(() => history.selected);
   const hasRuns = computed(() => runs.value.length > 0);
-
-  const flow = computed(() => {
-    if (!selected.value) return "";
-    return evidenceFlow(selected.value.retrieved.length, selected.value.guarded);
-  });
 
   const counts = computed(() => (selected.value ? tally(selected.value.guarded) : null));
   const reduction = computed(() =>
@@ -70,7 +64,6 @@ export function useEvidenceViewer() {
     runs,
     selected,
     hasRuns,
-    flow,
     counts,
     reduction,
     contained,

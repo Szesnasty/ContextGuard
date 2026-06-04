@@ -14,4 +14,10 @@ export default defineConfig(
       "vue/multi-word-component-names": "off",
     },
   },
+  {
+    files: ["src/components/SanitizedHtml.vue"],
+    rules: {
+      "vue/no-v-html": "off",
+    },
+  },
 );

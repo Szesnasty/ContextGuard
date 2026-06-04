@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import SanitizedHtml from "@/components/SanitizedHtml";
+import SanitizedHtml from "@/components/SanitizedHtml.vue";
 import { useRedTeamReport } from "@/composables/useRedTeamReport";
 
 const { html, error, isLoading } = useRedTeamReport();
