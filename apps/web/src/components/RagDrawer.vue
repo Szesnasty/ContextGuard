@@ -20,15 +20,16 @@ const { documents, selectedDocument, inPromptCount, withheldCount, selectDocumen
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport
+    v-if="open"
+    to="body"
+  >
     <div
-      v-if="open"
       class="drawer__scrim"
       @click="emit('close')"
     />
     <aside
-      class="drawer"
-      :class="{ 'drawer--open': open }"
+      class="drawer drawer--open"
       aria-label="RAG sources and evidence"
     >
       <header class="drawer__head">
@@ -40,6 +41,7 @@ const { documents, selectedDocument, inPromptCount, withheldCount, selectDocumen
         </div>
         <button
           class="ghost"
+          type="button"
           @click="emit('close')"
         >
           Close ✕

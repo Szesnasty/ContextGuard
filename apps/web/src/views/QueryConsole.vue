@@ -34,6 +34,7 @@ const {
         </h1>
         <button
           class="ghost console__corpus"
+          type="button"
           aria-label="Open documents and attack prompts"
           @click="openCorpus"
         >
@@ -90,6 +91,7 @@ const {
           <span class="muted">−{{ tokenReduction(message.run.guarded) }}% tokens</span>
           <button
             class="ghost bubble__open"
+            type="button"
             @click="openDrawer(message.run)"
           >
             View {{ message.run.retrieved.length }} sources →

@@ -29,15 +29,16 @@ function expectedLabel(expected: AttackPrompt["expected"]): string {
 </script>
 
 <template>
-  <Teleport to="body">
+  <Teleport
+    v-if="open"
+    to="body"
+  >
     <div
-      v-if="open"
       class="corpus__scrim"
       @click="emit('close')"
     />
     <aside
-      class="corpus"
-      :class="{ 'corpus--open': open }"
+      class="corpus corpus--open"
       aria-label="Corpus documents and attack prompts"
     >
       <header class="corpus__head">
@@ -50,6 +51,7 @@ function expectedLabel(expected: AttackPrompt["expected"]): string {
         </div>
         <button
           class="ghost corpus__close"
+          type="button"
           aria-label="Close documents and attacks"
           @click="emit('close')"
         >
