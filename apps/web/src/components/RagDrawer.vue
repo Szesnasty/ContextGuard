@@ -2,6 +2,7 @@
 import { toRef } from "vue";
 
 import type { GuardedContext, RetrievedChunk } from "@/api/types";
+import SanitizedHtml from "@/components/SanitizedHtml";
 import { useRagDrawer } from "@/composables/useRagDrawer";
 import { classificationClass, outcomeClass, renderMd } from "@/lib/firewall";
 
@@ -145,10 +146,9 @@ const { documents, selectedDocument, inPromptCount, withheldCount, selectDocumen
                 class="passage__note"
               >✕ not sent to model</span>
             </div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div
+            <SanitizedHtml
               class="passage__text"
-              v-html="renderMd(chunk.text)"
+              :html="renderMd(chunk.text)"
             />
             <div
               v-if="chunk.reasons.length || chunk.policies.length"

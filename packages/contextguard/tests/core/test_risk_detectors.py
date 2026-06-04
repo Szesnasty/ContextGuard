@@ -22,6 +22,13 @@ class TestPII:
     def test_pesel(self) -> None:
         assert "pesel" in _subtypes("PESEL: 44051401359 koniec")
 
+    def test_account_id_masks_only_the_identifier(self) -> None:
+        text = "Account ID 88213, paid Growth plan."
+        spans = detect_pii(text)
+        assert len(spans) == 1
+        assert spans[0].subtype == "account_id"
+        assert text[spans[0].start : spans[0].end] == "88213"
+
     def test_clean_text_yields_nothing(self) -> None:
         assert detect_pii("just an ordinary sentence") == []
 

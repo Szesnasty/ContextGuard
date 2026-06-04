@@ -85,6 +85,161 @@ export function evidenceFlow(retrievedCount: number, guarded: GuardedContext): s
   return lines.join("\n");
 }
 
+const ALLOWED_HTML_TAGS = new Set([
+  "a",
+  "br",
+  "code",
+  "em",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "li",
+  "ol",
+  "p",
+  "pre",
+  "span",
+  "strong",
+  "table",
+  "tbody",
+  "td",
+  "th",
+  "thead",
+  "tr",
+  "ul",
+]);
+
+const ALLOWED_SVG_TAGS = new Set([
+  "circle",
+  "defs",
+  "desc",
+  "ellipse",
+  "g",
+  "line",
+  "marker",
+  "path",
+  "polygon",
+  "polyline",
+  "rect",
+  "svg",
+  "text",
+  "title",
+  "tspan",
+]);
+
+const ALLOWED_ATTRS = new Set([
+  "aria-hidden",
+  "class",
+  "cx",
+  "cy",
+  "d",
+  "fill",
+  "font-size",
+  "height",
+  "href",
+  "id",
+  "marker-end",
+  "marker-start",
+  "markerWidth",
+  "markerHeight",
+  "offset",
+  "orient",
+  "points",
+  "r",
+  "refX",
+  "refY",
+  "role",
+  "rx",
+  "ry",
+  "stroke",
+  "stroke-dasharray",
+  "stroke-linecap",
+  "stroke-linejoin",
+  "stroke-width",
+  "style",
+  "target",
+  "transform",
+  "viewBox",
+  "width",
+  "x",
+  "x1",
+  "x2",
+  "xlink:href",
+  "xmlns",
+  "y",
+  "y1",
+  "y2",
+]);
+
+const URL_ATTRS = new Set(["href", "src", "xlink:href"]);
+const SAFE_STYLE = /^[\w\s#.:;,%()+\-"'/$]*$/;
+const DROP_WITH_CONTENT = new Set(["iframe", "object", "script", "style"]);
+
+function isSafeUrl(value: string): boolean {
+  const trimmed = value.trim().toLowerCase();
+  return !trimmed.startsWith("javascript:") && !trimmed.startsWith("data:text/html");
+}
+
+function isSafeStyle(value: string): boolean {
+  const lowered = value.trim().toLowerCase();
+  return (
+    SAFE_STYLE.test(value) &&
+    !lowered.includes("javascript:") &&
+    !lowered.includes("expression(") &&
+    !lowered.includes("@import") &&
+    !lowered.includes("url(")
+  );
+}
+
+function sanitizeElement(element: Element): void {
+  for (const attr of [...element.attributes]) {
+    const name = attr.name;
+    if (name.startsWith("on") || !ALLOWED_ATTRS.has(name)) {
+      element.removeAttribute(name);
+      continue;
+    }
+    if (URL_ATTRS.has(name) && !isSafeUrl(attr.value)) {
+      element.removeAttribute(name);
+    }
+    if (name === "style" && !isSafeStyle(attr.value)) {
+      element.removeAttribute(name);
+    }
+  }
+}
+
+function walkAndSanitize(node: Node, allowedTags: Set<string>): void {
+  for (const child of [...node.childNodes]) {
+    if (child.nodeType !== Node.ELEMENT_NODE) {
+      continue;
+    }
+    const element = child as Element;
+    const tag = element.tagName.toLowerCase();
+    if (!allowedTags.has(tag)) {
+      if (DROP_WITH_CONTENT.has(tag)) {
+        element.remove();
+        continue;
+      }
+      element.replaceWith(...element.childNodes);
+      continue;
+    }
+    sanitizeElement(element);
+    walkAndSanitize(element, allowedTags);
+  }
+}
+
+/** Sanitize HTML before it is inserted into the DOM. */
+export function sanitizeHtml(raw: string, options: { svg?: boolean } = {}): string {
+  const doc = document.implementation.createHTMLDocument("");
+  doc.body.innerHTML = raw;
+  const allowed = options.svg
+    ? new Set([...ALLOWED_HTML_TAGS, ...ALLOWED_SVG_TAGS])
+    : ALLOWED_HTML_TAGS;
+  walkAndSanitize(doc.body, allowed);
+  return doc.body.innerHTML;
+}
+
 // --- Provenance / grounding ------------------------------------------------
 // The drawer answers two operator questions: "where did the answer's knowledge
 // come from?" (source documents + relevance) and "which document is allowed
@@ -176,9 +331,9 @@ export function groupByDocument(chunks: EnrichedChunk[]): DocumentGroup[] {
 }
 
 /**
- * Minimal Markdown → safe HTML renderer for document text shown in drawers.
+ * Minimal Markdown -> sanitized HTML renderer for document text shown in drawers.
  * Handles headings, bold, italic, bullet lists, code and line-breaks.
- * Escapes HTML first so it is safe for v-html with trusted corpus content.
+ * Escapes HTML first, then sanitizes the generated tag subset before insertion.
  */
 export function renderMd(raw: string): string {
   const esc = raw
@@ -209,7 +364,7 @@ export function renderMd(raw: string): string {
   }
 
   if (inList) out.push("</ul>");
-  return out.join("");
+  return sanitizeHtml(out.join(""));
 }
 
 function inline(s: string): string {

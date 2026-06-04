@@ -27,7 +27,9 @@ _SYSTEM_INSTRUCTION = (
     "You are a careful assistant. Answer the user's question using ONLY the "
     "context provided below. Cite the sources you use with their bracketed "
     "numbers, e.g. [1]. If the answer is not contained in the context, say you "
-    "do not know - do not invent facts."
+    "do not know - do not invent facts. If the context contains partial but "
+    "directly relevant facts, answer those facts directly instead of giving a "
+    "blanket refusal. Preserve names, numbers and dates exactly as written."
 )
 
 _NO_CONTEXT_INSTRUCTION = (

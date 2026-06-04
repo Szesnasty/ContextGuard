@@ -3,6 +3,8 @@
 import mermaid from "mermaid";
 import { ref, watch, type Ref } from "vue";
 
+import { sanitizeHtml } from "@/lib/firewall";
+
 mermaid.initialize({ startOnLoad: false, theme: "default", securityLevel: "strict" });
 
 export function useMermaid(definition: Ref<string>) {
@@ -20,7 +22,7 @@ export function useMermaid(definition: Ref<string>) {
 
     try {
       const result = await mermaid.render(`mermaid-${renderSeq++}`, source);
-      svg.value = result.svg;
+      svg.value = sanitizeHtml(result.svg, { svg: true });
     } catch (cause) {
       error.value = (cause as Error).message ?? "Failed to render diagram.";
       svg.value = "";

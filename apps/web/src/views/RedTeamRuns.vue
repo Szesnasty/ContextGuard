@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import SanitizedHtml from "@/components/SanitizedHtml";
 import { useRedTeamReport } from "@/composables/useRedTeamReport";
 
 const { html, error, isLoading } = useRedTeamReport();
@@ -28,11 +29,11 @@ const { html, error, isLoading } = useRedTeamReport();
     >
       {{ error }}
     </div>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <article
+    <SanitizedHtml
       v-else
+      tag="article"
       class="redteam__report card"
-      v-html="html"
+      :html="html"
     />
   </section>
 </template>

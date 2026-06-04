@@ -28,19 +28,31 @@ const {
 <template>
   <section class="console">
     <header class="console__head">
-      <h1 class="console__title">
-        RAG Console
-      </h1>
+      <div class="console__titlebar">
+        <h1 class="console__title">
+          RAG Console
+        </h1>
+        <button
+          class="ghost console__corpus"
+          aria-label="Open documents and attack prompts"
+          @click="openCorpus"
+        >
+          <svg
+            class="console__corpus-icon"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M4 4.5h7l2 2h7v13H4z" />
+            <path d="M8 11h8" />
+            <path d="M8 15h5" />
+          </svg>
+          <span>Documents &amp; attacks</span>
+        </button>
+      </div>
       <p class="muted">
         Ask a question. The model answers from retrieved documents — then the firewall shows you
         which sources it would <em>allow</em>, <em>redact</em> or <em>block</em> for your identity.
       </p>
-      <button
-        class="ghost console__corpus"
-        @click="openCorpus"
-      >
-        📚 Documents &amp; attacks
-      </button>
     </header>
 
     <IdentityPicker />
@@ -153,12 +165,33 @@ const {
     margin-bottom: 0.25rem;
   }
 
-  &__corpus {
-    margin-top: 0.5rem;
+  &__titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
   }
 
   &__title {
-    margin: 0 0 0.25rem;
+    margin: 0;
+  }
+
+  &__corpus {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+  }
+
+  &__corpus-icon {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
   }
 
   &__thread {
@@ -247,6 +280,15 @@ const {
 
     input {
       width: 64px;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .console {
+    &__titlebar {
+      align-items: flex-start;
+      flex-direction: column;
     }
   }
 }

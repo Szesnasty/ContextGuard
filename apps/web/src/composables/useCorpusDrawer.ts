@@ -14,6 +14,8 @@ import {
   type AttackPrompt,
   type CorpusDocument,
 } from "@/lib/corpus";
+import { DEMO_IDENTITIES } from "@/lib/identities";
+import { useAuthStore } from "@/stores/auth";
 
 export type CorpusTab = "documents" | "attacks";
 
@@ -24,6 +26,7 @@ export interface AttackGroup {
 }
 
 export function useCorpusDrawer() {
+  const auth = useAuthStore();
   const tab = ref<CorpusTab>("documents");
   const selectedDocId = ref<string>(CORPUS_DOCUMENTS[0]?.docId ?? "");
 
@@ -37,13 +40,21 @@ export function useCorpusDrawer() {
     selectedDocument.value ? accessMatrix(selectedDocument.value) : [],
   );
 
+  const activeIdentity = computed(
+    () => DEMO_IDENTITIES.find((identity) => identity.sub === auth.activeSub) ?? DEMO_IDENTITIES[0],
+  );
+
+  const identityAttackPrompts = computed(() =>
+    ATTACK_PROMPTS.filter((prompt) => prompt.sub === activeIdentity.value?.sub),
+  );
+
   const attackGroups = computed<AttackGroup[]>(() => {
     const order: AttackCategory[] = ["confidential", "cross-tenant", "pii", "injection", "baseline"];
     return order
       .map((category) => ({
         category,
         label: ATTACK_CATEGORY_LABELS[category],
-        prompts: ATTACK_PROMPTS.filter((prompt) => prompt.category === category),
+        prompts: identityAttackPrompts.value.filter((prompt) => prompt.category === category),
       }))
       .filter((group) => group.prompts.length > 0);
   });
@@ -62,6 +73,8 @@ export function useCorpusDrawer() {
     tenantGroups,
     selectedDocument,
     selectedAccess,
+    activeIdentity,
+    identityAttackPrompts,
     attackGroups,
     showTab,
     selectDocument,

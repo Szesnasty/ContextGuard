@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toRef } from "vue";
 
+import SanitizedHtml from "@/components/SanitizedHtml";
 import { useMermaid } from "@/composables/useMermaid";
 
 const props = defineProps<{ definition: string }>();
@@ -15,11 +16,11 @@ const { svg, error } = useMermaid(toRef(props, "definition"));
     >
       {{ error }}
     </div>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <div
+    <SanitizedHtml
       v-else
       class="mermaid__host"
-      v-html="svg"
+      :html="svg"
+      :svg="true"
     />
   </div>
 </template>
@@ -36,4 +37,3 @@ const { svg, error } = useMermaid(toRef(props, "definition"));
   }
 }
 </style>
-

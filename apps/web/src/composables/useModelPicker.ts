@@ -6,6 +6,32 @@ import { computed, onMounted, ref } from "vue";
 import { ApiError, listModels, pullModel, setModel } from "@/api/operations";
 import type { DevModel } from "@/api/types";
 
+export interface ModelPreset {
+  name: string;
+  label: string;
+  description: string;
+}
+
+export const MODEL_PRESETS: ModelPreset[] = [
+  {
+    name: "llama3.2:3b",
+    label: "Fast demo",
+    description: "Small and quick on laptops.",
+  },
+  {
+    name: "qwen2.5:7b",
+    label: "Best default",
+    description: "Stronger reasoning for the demo.",
+  },
+  {
+    name: "mistral:7b",
+    label: "Fallback",
+    description: "Good general local model.",
+  },
+];
+
+const OLLAMA_DOWNLOAD_URL = "https://ollama.com/download";
+
 /** Bytes to a short human label (e.g. "4.7 GB"), for the model list. */
 function formatSize(bytes: number): string {
   if (bytes <= 0) return "";
@@ -14,26 +40,55 @@ function formatSize(bytes: number): string {
   return `${Math.round(bytes / 1_000_000)} MB`;
 }
 
+function isChatModel(model: DevModel): boolean {
+  const name = model.name.toLowerCase();
+  return !name.includes("embed") && !name.includes("embedding");
+}
+
 export function useModelPicker() {
   const models = ref<DevModel[]>([]);
   const activeModel = ref("");
-  const pullName = ref("");
   const isLoading = ref(false);
   const isSwitching = ref(false);
   const isPulling = ref(false);
+  const installingModel = ref("");
   const error = ref("");
+  const ollamaUnavailable = ref(false);
 
-  const canPull = computed(() => pullName.value.trim().length > 0 && !isPulling.value);
+  const chatModels = computed(() => models.value.filter(isChatModel));
+  const installedNames = computed(() => new Set(models.value.map((model) => model.name)));
+  const hasNoModels = computed(
+    () => !isLoading.value && !ollamaUnavailable.value && chatModels.value.length === 0,
+  );
+
+  function isInstalled(name: string): boolean {
+    return installedNames.value.has(name);
+  }
+
+  function isActive(name: string): boolean {
+    return activeModel.value === name;
+  }
+
+  function presetAction(name: string): string {
+    if (installingModel.value === name) return "Installing";
+    if (isActive(name)) return "Active";
+    if (isInstalled(name)) return "Use";
+    return "Install";
+  }
 
   async function load() {
     isLoading.value = true;
     error.value = "";
+    ollamaUnavailable.value = false;
     try {
       const data = await listModels();
       models.value = data.models;
       activeModel.value = data.active;
     } catch (caught) {
-      error.value = caught instanceof ApiError ? caught.message : "Could not load models";
+      const message = caught instanceof ApiError ? caught.message : "Could not load models";
+      ollamaUnavailable.value = message.toLowerCase().includes("cannot reach ollama");
+      models.value = [];
+      error.value = ollamaUnavailable.value ? "" : message;
     } finally {
       isLoading.value = false;
     }
@@ -53,18 +108,22 @@ export function useModelPicker() {
     }
   }
 
-  async function pull() {
-    if (!canPull.value) return;
-    isPulling.value = true;
+  async function usePreset(name: string) {
+    if (isPulling.value || isSwitching.value || isActive(name)) return;
     error.value = "";
     try {
-      await pullModel(pullName.value.trim());
-      pullName.value = "";
-      await load();
+      if (!isInstalled(name)) {
+        isPulling.value = true;
+        installingModel.value = name;
+        await pullModel(name);
+        await load();
+      }
+      await selectModel(name);
     } catch (caught) {
       error.value = caught instanceof ApiError ? caught.message : "Could not pull model";
     } finally {
       isPulling.value = false;
+      installingModel.value = "";
     }
   }
 
@@ -72,16 +131,23 @@ export function useModelPicker() {
 
   return {
     models,
+    chatModels,
     activeModel,
-    pullName,
+    presets: MODEL_PRESETS,
     isLoading,
     isSwitching,
     isPulling,
+    installingModel,
     error,
-    canPull,
+    hasNoModels,
+    ollamaUnavailable,
+    ollamaDownloadUrl: OLLAMA_DOWNLOAD_URL,
     formatSize,
+    isInstalled,
+    isActive,
+    presetAction,
     load,
     selectModel,
-    pull,
+    usePreset,
   };
 }

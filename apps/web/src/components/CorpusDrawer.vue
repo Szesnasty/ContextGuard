@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AttackPrompt } from "@/lib/corpus";
+import SanitizedHtml from "@/components/SanitizedHtml";
 import { useCorpusDrawer } from "@/composables/useCorpusDrawer";
 import { classificationClass, outcomeClass, renderMd } from "@/lib/firewall";
 
@@ -13,10 +14,18 @@ const {
   tenantGroups,
   selectedDocument,
   selectedAccess,
+  activeIdentity,
+  identityAttackPrompts,
   attackGroups,
   showTab,
   selectDocument,
 } = useCorpusDrawer();
+
+function expectedLabel(expected: AttackPrompt["expected"]): string {
+  if (expected === "blocked") return "expect source blocked";
+  if (expected === "redacted") return "expect PII masked";
+  return "expect allowed";
+}
 </script>
 
 <template>
@@ -40,10 +49,18 @@ const {
           </div>
         </div>
         <button
-          class="ghost"
+          class="ghost corpus__close"
+          aria-label="Close documents and attacks"
           @click="emit('close')"
         >
-          Close ✕
+          <span>Close</span>
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path d="M6 6l12 12" />
+            <path d="M18 6L6 18" />
+          </svg>
         </button>
       </header>
 
@@ -123,20 +140,18 @@ const {
             >{{ docTag.label }}</span>
           </div>
 
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div
+          <SanitizedHtml
             class="detail__summary"
-            v-html="renderMd(selectedDocument.summary)"
+            :html="renderMd(selectedDocument.summary)"
           />
 
           <div class="detail__access">
             <h4 class="detail__h4">
               Who it’s for
             </h4>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <div
+            <SanitizedHtml
               class="muted detail__note"
-              v-html="renderMd(selectedDocument.accessNote)"
+              :html="renderMd(selectedDocument.accessNote)"
             />
           </div>
 
@@ -165,6 +180,14 @@ const {
         class="corpus__body corpus__body--single"
       >
         <div class="attacks">
+          <div class="attacks__intro">
+            <div>
+              <span class="attacks__eyebrow">Prompt set</span>
+              <strong>{{ activeIdentity?.sub }}</strong>
+              <span class="muted"> · {{ activeIdentity?.role }} @ {{ activeIdentity?.tenant }}</span>
+            </div>
+            <span class="tag tag--allowed">{{ identityAttackPrompts.length }} prompts</span>
+          </div>
           <section
             v-for="group in attackGroups"
             :key="group.category"
@@ -180,14 +203,16 @@ const {
             >
               <div class="probe__head">
                 <span class="probe__title">{{ attack.title }}</span>
-                <span :class="outcomeClass(attack.expected)">expect {{ attack.expected }}</span>
+                <span :class="outcomeClass(attack.expected)">{{ expectedLabel(attack.expected) }}</span>
               </div>
               <p class="probe__prompt">
                 “{{ attack.prompt }}”
               </p>
               <p class="probe__why muted">
-                <!-- eslint-disable-next-line vue/no-v-html -->
-                run as <code>{{ attack.sub }}</code> — <span v-html="renderMd(attack.rationale)" />
+                <SanitizedHtml
+                  tag="span"
+                  :html="renderMd(attack.rationale)"
+                />
               </p>
               <button
                 class="probe__load"
@@ -197,6 +222,12 @@ const {
               </button>
             </article>
           </section>
+          <p
+            v-if="!attackGroups.length"
+            class="attacks__empty muted"
+          >
+            No attack prompts for this identity yet.
+          </p>
         </div>
       </div>
     </aside>
@@ -244,6 +275,22 @@ const {
     font-size: 12px;
     margin-top: 0.2rem;
     max-width: 56ch;
+  }
+
+  &__close {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+
+    svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-width: 2;
+    }
   }
 
   &__tabs {
@@ -406,6 +453,25 @@ const {
   overflow: auto;
   padding: 1rem;
 
+  &__intro {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid $border;
+  }
+
+  &__eyebrow {
+    display: block;
+    color: $text-dim;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.15rem;
+  }
+
   &__group {
     margin-bottom: 1.25rem;
   }
@@ -416,6 +482,11 @@ const {
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: $text-dim;
+  }
+
+  &__empty {
+    text-align: center;
+    margin-top: 2rem;
   }
 }
 

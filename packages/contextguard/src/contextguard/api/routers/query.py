@@ -126,7 +126,13 @@ def query(
         log.error("query.model_failed", error=str(exc))
         raise HTTPException(
             status_code=502,
-            detail={"error": "model call failed", "trace_id": trace_id},
+            detail={
+                "error": (
+                    "model unavailable - check that Ollama is running and "
+                    "the selected model is installed"
+                ),
+                "trace_id": trace_id,
+            },
         ) from exc
 
     log.info(

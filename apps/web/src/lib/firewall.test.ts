@@ -8,6 +8,8 @@ import {
   groupByDocument,
   isContained,
   outcomeClass,
+  renderMd,
+  sanitizeHtml,
   tally,
   tokenReduction,
 } from "@/lib/firewall";
@@ -102,5 +104,30 @@ describe("evidenceFlow", () => {
     const flow = evidenceFlow(3, guarded());
     expect(flow.startsWith("flowchart LR")).toBe(true);
     expect(flow).toContain("Retrieved<br/>3");
+  });
+});
+
+describe("sanitizeHtml", () => {
+  it("removes scripts, event handlers and javascript URLs", () => {
+    const clean = sanitizeHtml(
+      '<p onclick="alert(1)">ok</p><script>alert(1)</script><a href="javascript:alert(1)">bad</a><span style="background:url(javascript:alert(1))">styled</span>',
+    );
+
+    expect(clean).toContain("<p>ok</p>");
+    expect(clean).toContain("<a>bad</a>");
+    expect(clean).toContain("<span>styled</span>");
+    expect(clean).not.toContain("alert(1)");
+    expect(clean).not.toContain("script");
+    expect(clean).not.toContain("onclick");
+    expect(clean).not.toContain("javascript:");
+    expect(clean).not.toContain("style=");
+  });
+
+  it("escapes raw HTML before markdown output reaches the DOM", () => {
+    const clean = renderMd("**safe** <img src=x onerror=alert(1)>");
+
+    expect(clean).toContain("<strong>safe</strong>");
+    expect(clean).toContain("&lt;img");
+    expect(clean).not.toContain("<img");
   });
 });
