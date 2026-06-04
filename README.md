@@ -6,6 +6,9 @@ ContextGuard sits between retrieval and generation. It decides which chunks are
 allowed to reach the model, which must be redacted, which must be blocked, and
 why. Every decision becomes evidence you can inspect, replay, and test.
 
+It is library-first: the core guard can run without Docker, a database, a model,
+or network access.
+
 Most RAG systems ask:
 
 > Did we retrieve relevant context?
@@ -339,6 +342,7 @@ ContextGuard is not:
 
 - a replacement for your retriever,
 - a replacement for identity or ACL mapping,
+- a replacement for secure source-system permissions,
 - a generic LLM firewall,
 - a compliance certification,
 - a guarantee that no data can ever leak.
